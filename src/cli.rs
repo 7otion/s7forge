@@ -111,29 +111,29 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
         }
 
         "clear-cache" => {
-            while let Some(arg) = parser.next()? {
-                match arg {
-                    Long("help") | Short('h') => {
-                        print_clear_cache_help();
-                        std::process::exit(0);
-                    }
-                    _ => return Err(arg.unexpected()),
-                }
-            }
-            Ok(Command::ClearCache)
+			if let Some(arg) = parser.next()? {
+				match arg {
+					Long("help") | Short('h') => {
+						print_clear_cache_help();
+						std::process::exit(0);
+					}
+					_ => return Err(arg.unexpected()),
+				}
+			}
+			Ok(Command::ClearCache)
         }
 
         "steam-library-paths" => {
-            while let Some(arg) = parser.next()? {
-                match arg {
-                    Long("help") | Short('h') => {
-                        print_steam_library_paths_help();
-                        std::process::exit(0);
-                    }
-                    _ => return Err(arg.unexpected()),
-                }
-            }
-            Ok(Command::SteamLibraryPaths)
+			if let Some(arg) = parser.next()? {
+				match arg {
+					Long("help") | Short('h') => {
+						print_steam_library_paths_help();
+						std::process::exit(0);
+					}
+					_ => return Err(arg.unexpected()),
+				}
+			}
+			Ok(Command::SteamLibraryPaths)
         }
 
         "workshop-items" => {
