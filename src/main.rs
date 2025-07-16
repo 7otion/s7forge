@@ -1,9 +1,9 @@
+mod cli;
 mod commands;
 mod core;
 mod utils;
-mod cli;
 
-use cli::{parse_args, Command};
+use cli::{Command, parse_args};
 
 #[tokio::main]
 async fn main() {
@@ -31,11 +31,9 @@ async fn main() {
                 .await
                 .map(|items| serde_json::to_string_pretty(&items).unwrap())
         }
-        Command::Subscribe { app_id, item_ids } => {
-            commands::subscribe::subscribe(app_id, item_ids)
-                .await
-                .map(|results| serde_json::to_string_pretty(&results).unwrap())
-        }
+        Command::Subscribe { app_id, item_ids } => commands::subscribe::subscribe(app_id, item_ids)
+            .await
+            .map(|results| serde_json::to_string_pretty(&results).unwrap()),
         Command::Unsubscribe { app_id, item_ids } => {
             commands::unsubscribe::unsubscribe(app_id, item_ids)
                 .await
@@ -46,11 +44,9 @@ async fn main() {
                 .await
                 .map(|_| "\"Workshop item download completed successfully\"".to_string())
         }
-        Command::SubscribedItems { app_id } => {
-            commands::subscribed_items::subscribed_items(app_id)
-                .await
-                .map(|items| serde_json::to_string_pretty(&items).unwrap())
-        }
+        Command::SubscribedItems { app_id } => commands::subscribed_items::subscribed_items(app_id)
+            .await
+            .map(|items| serde_json::to_string_pretty(&items).unwrap()),
         Command::SearchWorkshop {
             app_id,
             query,

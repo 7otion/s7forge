@@ -279,11 +279,12 @@ pub async fn search_workshop(
     let result: Vec<EnhancedWorkshopItem> = workshop_items
         .into_iter()
         .map(|item| {
+            let owner = item.owner.clone();
             let creator_name = creator_names
                 .get(&item.owner.steam_id64)
                 .cloned()
                 .unwrap_or_else(|| "[unknown]".to_string());
-            EnhancedWorkshopItem::new(item, creator_name)
+            EnhancedWorkshopItem::new(item, owner.steam_id64.to_string(), creator_name)
         })
         .collect();
 

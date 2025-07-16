@@ -20,13 +20,15 @@ pub struct WorkshopItemCache {
 pub struct EnhancedWorkshopItem {
     #[serde(flatten)]
     pub workshop_item: WorkshopItem,
+    pub creator_id: String,
     pub creator_name: String,
 }
 
 impl EnhancedWorkshopItem {
-    pub fn new(workshop_item: WorkshopItem, creator_name: String) -> Self {
+    pub fn new(workshop_item: WorkshopItem, creator_id: String, creator_name: String) -> Self {
         Self {
             workshop_item,
+            creator_id,
             creator_name,
         }
     }
@@ -78,11 +80,12 @@ pub async fn workshop_items(
         return Ok(workshop_items
             .into_iter()
             .map(|item| {
+                let owner = item.owner.clone();
                 let creator_name = creator_names
                     .get(&item.owner.steam_id64)
                     .cloned()
                     .unwrap_or_else(|| "[unknown]".to_string());
-                EnhancedWorkshopItem::new(item, creator_name)
+                EnhancedWorkshopItem::new(item, owner.steam_id64.to_string(), creator_name)
             })
             .collect());
     }
@@ -176,11 +179,12 @@ pub async fn workshop_items(
     let result = final_items
         .into_iter()
         .map(|item| {
+            let owner = item.owner.clone();
             let creator_name = creator_names
                 .get(&item.owner.steam_id64)
                 .cloned()
                 .unwrap_or_else(|| "[unknown]".to_string());
-            EnhancedWorkshopItem::new(item, creator_name)
+            EnhancedWorkshopItem::new(item, owner.steam_id64.to_string(), creator_name)
         })
         .collect();
 

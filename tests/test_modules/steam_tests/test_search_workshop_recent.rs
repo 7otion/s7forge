@@ -1,4 +1,6 @@
-use crate::test_modules::utils::{TestConfig, assert_valid_json, run_search_workshop_command, steam_test_or_skip};
+use crate::test_modules::utils::{
+    TestConfig, assert_valid_json, run_search_workshop_command, steam_test_or_skip,
+};
 
 #[test]
 fn test_search_workshop_recent() {
