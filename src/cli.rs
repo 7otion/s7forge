@@ -1,12 +1,32 @@
 #[derive(Debug)]
 pub enum Command {
-    CheckItemDownload { app_id: u32, item_id: u64 },
-    CollectionItems { app_id: u32, item_id: u64 },
-    WorkshopItems { app_id: u32, item_ids: Vec<u64> },
-    Subscribe { app_id: u32, item_ids: Vec<u64> },
-    Unsubscribe { app_id: u32, item_ids: Vec<u64> },
-    DownloadWorkshopItem { app_id: u32, item_id: u64 },
-    SubscribedItems { app_id: u32 },
+    CheckItemDownload {
+        app_id: u32,
+        item_id: u64,
+    },
+    CollectionItems {
+        app_id: u32,
+        item_id: u64,
+    },
+    WorkshopItems {
+        app_id: u32,
+        item_ids: Vec<u64>,
+    },
+    Subscribe {
+        app_id: u32,
+        item_ids: Vec<u64>,
+    },
+    Unsubscribe {
+        app_id: u32,
+        item_ids: Vec<u64>,
+    },
+    DownloadWorkshopItem {
+        app_id: u32,
+        item_id: u64,
+    },
+    SubscribedItems {
+        app_id: u32,
+    },
     SearchWorkshop {
         app_id: u32,
         query: String,
@@ -15,17 +35,21 @@ pub enum Command {
         page: u32,
         tags: Option<String>,
     },
-    WorkshopPath { app_id: u32 },
+    WorkshopPath {
+        app_id: u32,
+    },
     SteamLibraryPaths,
     ClearCache,
-    DiscoverTags { app_id: u32 },
+    DiscoverTags {
+        app_id: u32,
+    },
 }
 
 pub fn parse_args() -> Result<Command, lexopt::Error> {
     use lexopt::prelude::*;
 
     let mut parser = lexopt::Parser::from_env();
-    
+
     let command = match parser.next()? {
         Some(Value(cmd)) => cmd.to_string_lossy().to_string(),
         _ => return Err("Missing command".into()),
@@ -35,7 +59,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
         "check-item-download" => {
             let mut app_id = None;
             let mut item_id = None;
-            
+
             while let Some(arg) = parser.next()? {
                 match arg {
                     Long("app-id") => app_id = Some(parser.value()?.parse()?),
@@ -47,17 +71,17 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
                     _ => return Err(arg.unexpected()),
                 }
             }
-            
+
             Ok(Command::CheckItemDownload {
                 app_id: app_id.ok_or("Missing --app-id")?,
                 item_id: item_id.ok_or("Missing --item-id")?,
             })
         }
-        
+
         "collection-items" => {
             let mut app_id = None;
             let mut item_id = None;
-            
+
             while let Some(arg) = parser.next()? {
                 match arg {
                     Long("app-id") => app_id = Some(parser.value()?.parse()?),
@@ -69,7 +93,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
                     _ => return Err(arg.unexpected()),
                 }
             }
-            
+
             Ok(Command::CollectionItems {
                 app_id: app_id.ok_or("Missing --app-id")?,
                 item_id: item_id.ok_or("Missing --item-id")?,
@@ -83,7 +107,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
             let mut period = None;
             let mut page = 1;
             let mut tags = None;
-            
+
             while let Some(arg) = parser.next()? {
                 match arg {
                     Long("app-id") => app_id = Some(parser.value()?.parse()?),
@@ -99,7 +123,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
                     _ => return Err(arg.unexpected()),
                 }
             }
-            
+
             Ok(Command::SearchWorkshop {
                 app_id: app_id.ok_or("Missing --app-id")?,
                 query,
@@ -111,42 +135,48 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
         }
 
         "clear-cache" => {
-			if let Some(arg) = parser.next()? {
-				match arg {
-					Long("help") | Short('h') => {
-						print_clear_cache_help();
-						std::process::exit(0);
-					}
-					_ => return Err(arg.unexpected()),
-				}
-			}
-			Ok(Command::ClearCache)
+            if let Some(arg) = parser.next()? {
+                match arg {
+                    Long("help") | Short('h') => {
+                        print_clear_cache_help();
+                        std::process::exit(0);
+                    }
+                    _ => return Err(arg.unexpected()),
+                }
+            }
+            Ok(Command::ClearCache)
         }
 
         "steam-library-paths" => {
-			if let Some(arg) = parser.next()? {
-				match arg {
-					Long("help") | Short('h') => {
-						print_steam_library_paths_help();
-						std::process::exit(0);
-					}
-					_ => return Err(arg.unexpected()),
-				}
-			}
-			Ok(Command::SteamLibraryPaths)
+            if let Some(arg) = parser.next()? {
+                match arg {
+                    Long("help") | Short('h') => {
+                        print_steam_library_paths_help();
+                        std::process::exit(0);
+                    }
+                    _ => return Err(arg.unexpected()),
+                }
+            }
+            Ok(Command::SteamLibraryPaths)
         }
 
         "workshop-items" => {
             let mut app_id = None;
             let mut item_ids = Vec::new();
-            
-            while let Some(arg) = parser.next()? {                match arg {
+
+            while let Some(arg) = parser.next()? {
+                match arg {
                     Long("app-id") => app_id = Some(parser.value()?.parse()?),
                     Long("item-ids") => {
                         let ids_value = parser.value()?;
                         let ids_str = ids_value.to_string_lossy();
-                        item_ids = ids_str.split(',')
-                            .map(|s| s.trim().parse().map_err(|_| format!("Invalid item ID: {}", s)))
+                        item_ids = ids_str
+                            .split(',')
+                            .map(|s| {
+                                s.trim()
+                                    .parse()
+                                    .map_err(|_| format!("Invalid item ID: {}", s))
+                            })
                             .collect::<Result<Vec<u64>, String>>()?;
                     }
                     Long("help") | Short('h') => {
@@ -156,7 +186,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
                     _ => return Err(arg.unexpected()),
                 }
             }
-            
+
             Ok(Command::WorkshopItems {
                 app_id: app_id.ok_or("Missing --app-id")?,
                 item_ids,
@@ -166,14 +196,20 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
         "subscribe" => {
             let mut app_id = None;
             let mut item_ids = Vec::new();
-            
-            while let Some(arg) = parser.next()? {                match arg {
+
+            while let Some(arg) = parser.next()? {
+                match arg {
                     Long("app-id") => app_id = Some(parser.value()?.parse()?),
                     Long("item-ids") => {
                         let ids_value = parser.value()?;
                         let ids_str = ids_value.to_string_lossy();
-                        item_ids = ids_str.split(',')
-                            .map(|s| s.trim().parse().map_err(|_| format!("Invalid item ID: {}", s)))
+                        item_ids = ids_str
+                            .split(',')
+                            .map(|s| {
+                                s.trim()
+                                    .parse()
+                                    .map_err(|_| format!("Invalid item ID: {}", s))
+                            })
                             .collect::<Result<Vec<u64>, String>>()?;
                     }
                     Long("help") | Short('h') => {
@@ -183,7 +219,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
                     _ => return Err(arg.unexpected()),
                 }
             }
-            
+
             Ok(Command::Subscribe {
                 app_id: app_id.ok_or("Missing --app-id")?,
                 item_ids,
@@ -193,14 +229,20 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
         "unsubscribe" => {
             let mut app_id = None;
             let mut item_ids = Vec::new();
-            
-            while let Some(arg) = parser.next()? {                match arg {
+
+            while let Some(arg) = parser.next()? {
+                match arg {
                     Long("app-id") => app_id = Some(parser.value()?.parse()?),
                     Long("item-ids") => {
                         let ids_value = parser.value()?;
                         let ids_str = ids_value.to_string_lossy();
-                        item_ids = ids_str.split(',')
-                            .map(|s| s.trim().parse().map_err(|_| format!("Invalid item ID: {}", s)))
+                        item_ids = ids_str
+                            .split(',')
+                            .map(|s| {
+                                s.trim()
+                                    .parse()
+                                    .map_err(|_| format!("Invalid item ID: {}", s))
+                            })
                             .collect::<Result<Vec<u64>, String>>()?;
                     }
                     Long("help") | Short('h') => {
@@ -210,7 +252,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
                     _ => return Err(arg.unexpected()),
                 }
             }
-            
+
             Ok(Command::Unsubscribe {
                 app_id: app_id.ok_or("Missing --app-id")?,
                 item_ids,
@@ -220,7 +262,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
         "download-workshop-item" => {
             let mut app_id = None;
             let mut item_id = None;
-            
+
             while let Some(arg) = parser.next()? {
                 match arg {
                     Long("app-id") => app_id = Some(parser.value()?.parse()?),
@@ -232,7 +274,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
                     _ => return Err(arg.unexpected()),
                 }
             }
-            
+
             Ok(Command::DownloadWorkshopItem {
                 app_id: app_id.ok_or("Missing --app-id")?,
                 item_id: item_id.ok_or("Missing --item-id")?,
@@ -241,7 +283,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
 
         "subscribed-items" => {
             let mut app_id = None;
-            
+
             while let Some(arg) = parser.next()? {
                 match arg {
                     Long("app-id") => app_id = Some(parser.value()?.parse()?),
@@ -252,7 +294,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
                     _ => return Err(arg.unexpected()),
                 }
             }
-            
+
             Ok(Command::SubscribedItems {
                 app_id: app_id.ok_or("Missing --app-id")?,
             })
@@ -260,7 +302,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
 
         "workshop-path" => {
             let mut app_id = None;
-            
+
             while let Some(arg) = parser.next()? {
                 match arg {
                     Long("app-id") => app_id = Some(parser.value()?.parse()?),
@@ -271,7 +313,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
                     _ => return Err(arg.unexpected()),
                 }
             }
-            
+
             Ok(Command::WorkshopPath {
                 app_id: app_id.ok_or("Missing --app-id")?,
             })
@@ -279,7 +321,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
 
         "discover-tags" => {
             let mut app_id = None;
-            
+
             while let Some(arg) = parser.next()? {
                 match arg {
                     Long("app-id") => app_id = Some(parser.value()?.parse()?),
@@ -290,7 +332,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
                     _ => return Err(arg.unexpected()),
                 }
             }
-            
+
             Ok(Command::DiscoverTags {
                 app_id: app_id.ok_or("Missing --app-id")?,
             })
@@ -299,7 +341,7 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
             print_main_help();
             std::process::exit(0);
         }
-        
+
         _ => Err(format!("Unknown command: {}", command).into()),
     }
 }
@@ -356,8 +398,12 @@ fn print_search_workshop_help() {
     println!("OPTIONS:");
     println!("    --app-id <APP_ID>        Steam App ID of the game");
     println!("    --query <QUERY>          Text to search for (optional for most sort methods)");
-    println!("    --sort-by <SORT>         Sort by: relevance, recent, popular, most-subscribed, recently-updated [default: relevance]");
-    println!("    --period <PERIOD>        Time period filter: today, one-week, three-months, six-months, one-year (only for 'popular' sort)");
+    println!(
+        "    --sort-by <SORT>         Sort by: relevance, recent, popular, most-subscribed, recently-updated [default: relevance]"
+    );
+    println!(
+        "    --period <PERIOD>        Time period filter: today, one-week, three-months, six-months, one-year (only for 'popular' sort)"
+    );
     println!("    --page <PAGE>            Page number for pagination [default: 1]");
     println!("    --tags <TAGS>            Filter by tags, comma-separated (e.g., 'mod,weapon')");
     println!("    -h, --help               Print help\n");
@@ -417,7 +463,9 @@ fn print_unsubscribe_help() {
     println!("    s7forge unsubscribe --app-id <APP_ID> --item-ids <ITEM_IDS>\n");
     println!("OPTIONS:");
     println!("    --app-id <APP_ID>          Steam App ID of the game");
-    println!("    --item-ids <ITEM_IDS>      Workshop item IDs to unsubscribe from (comma-separated)");
+    println!(
+        "    --item-ids <ITEM_IDS>      Workshop item IDs to unsubscribe from (comma-separated)"
+    );
     println!("    -h, --help                 Print help\n");
     println!("EXAMPLE:");
     println!("    s7forge unsubscribe --app-id 548430 --item-ids 123,456,789");
