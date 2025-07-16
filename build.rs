@@ -5,8 +5,8 @@ fn main() {
         res.set("FileDescription", "Steam Workshop Utility");
         res.set("ProductName", "s7forge");
         res.set("CompanyName", "Burak Kartal");
-        res.set("FileVersion", "0.1.0");
-        res.set("ProductVersion", "0.1.0");
+        res.set("FileVersion", "0.1.1");
+        res.set("ProductVersion", "0.1.1");
         res.set("LegalCopyright", "MIT License - Open Source Software");
         res.set("OriginalFilename", "s7forge.exe");
         res.set("InternalName", "s7forge");

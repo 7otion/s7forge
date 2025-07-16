@@ -106,6 +106,7 @@ s7forge clear-cache
   {
     "published_file_id": "number",
     "creator_steam_game_id": "number | null",
+    "creator_id": "string",
     "creator_name": "string",
     "consumer_steam_game_id": "number | null",
     "title": "string",
