@@ -61,6 +61,10 @@ async fn main() {
             Some(path) => Ok(serde_json::to_string_pretty(&path).unwrap()),
             None => Err(format!("Workshop path not found for app ID {}", app_id)),
         },
+        Command::AppInstallationPath { app_id } => {
+            commands::app_installation_path::app_installation_path(app_id)
+                .map(|path| serde_json::to_string_pretty(&path).unwrap())
+        }
         Command::SteamLibraryPaths => commands::steam_library_paths::steam_library_paths()
             .map(|paths| serde_json::to_string_pretty(&paths).unwrap()),
         Command::ClearCache => commands::clear_cache::clear_cache()

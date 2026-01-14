@@ -38,6 +38,9 @@ pub enum Command {
     WorkshopPath {
         app_id: u32,
     },
+    AppInstallationPath {
+        app_id: u32,
+    },
     SteamLibraryPaths,
     ClearCache,
     DiscoverTags {
@@ -50,9 +53,21 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
 
     let mut parser = lexopt::Parser::from_env();
 
+    // Handle global --help and --version before command parsing
     let command = match parser.next()? {
+        Some(Long("help") | Short('h')) => {
+            print_general_help();
+            std::process::exit(0);
+        }
+        Some(Long("version") | Short('v')) => {
+            print_version();
+            std::process::exit(0);
+        }
         Some(Value(cmd)) => cmd.to_string_lossy().to_string(),
-        _ => return Err("Missing command".into()),
+        _ => {
+            print_general_help();
+            return Err("Missing command".into());
+        }
     };
 
     match command.as_str() {
@@ -337,6 +352,26 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
                 app_id: app_id.ok_or("Missing --app-id")?,
             })
         }
+
+        "app-installation-path" => {
+            let mut app_id = None;
+
+            while let Some(arg) = parser.next()? {
+                match arg {
+                    Long("app-id") => app_id = Some(parser.value()?.parse()?),
+                    Long("help") | Short('h') => {
+                        print_app_installation_path_help();
+                        std::process::exit(0);
+                    }
+                    _ => return Err(arg.unexpected()),
+                }
+            }
+
+            Ok(Command::AppInstallationPath {
+                app_id: app_id.ok_or("Missing --app-id")?,
+            })
+        }
+
         "help" | "--help" | "-h" => {
             print_main_help();
             std::process::exit(0);
@@ -360,6 +395,7 @@ fn print_main_help() {
     println!("    subscribed-items        List all items you're subscribed to for a game");
     println!("    search-workshop         Search workshop content by text query");
     println!("    workshop-path           Get the local workshop path for a game");
+    println!("    app-installation-path   Get the installation path for a Steam app");
     println!("    steam-library-paths     List all Steam library folder paths");
     println!("    clear-cache             Clear all cached data");
     println!("    discover-tags           Discover all available workshop tags for a game");
@@ -514,4 +550,43 @@ fn print_discover_tags_help() {
     println!("    -h, --help             Print help\n");
     println!("EXAMPLE:");
     println!("    s7forge discover-tags --app-id 548430");
+}
+
+fn print_app_installation_path_help() {
+    println!("Get the installation path for a Steam app\n");
+    println!("USAGE:");
+    println!("    s7forge app-installation-path --app-id <APP_ID>\n");
+    println!("OPTIONS:");
+    println!("    --app-id <APP_ID>      Steam App ID of the game");
+    println!("    -h, --help             Print help\n");
+    println!("EXAMPLE:");
+    println!("    s7forge app-installation-path --app-id 548430");
+}
+
+fn print_general_help() {
+    println!("s7forge - Steam utility for managing workshop content and Steam app data\n");
+    println!("USAGE:");
+    println!("    s7forge <COMMAND> [OPTIONS]\n");
+    println!("COMMANDS:");
+    println!("    search-workshop          Search for workshop items");
+    println!("    discover-tags            Discover available workshop tags for a game");
+    println!("    workshop-items           Get details about workshop items");
+    println!("    collection-items         Get items from a workshop collection");
+    println!("    subscribed-items         List all items you're subscribed to");
+    println!("    check-item-download      Check if a workshop item is downloaded");
+    println!("    subscribe                Subscribe to workshop items");
+    println!("    unsubscribe              Unsubscribe from workshop items");
+    println!("    download-workshop-item   Download a workshop item you own");
+    println!("    clear-cache              Clear the Steam workshop cache");
+    println!("    workshop-path            Get the local workshop path for a game");
+    println!("    steam-library-paths      List all Steam library paths");
+    println!("    app-installation-path    Get the installation path for a Steam app\n");
+    println!("OPTIONS:");
+    println!("    -h, --help               Print help");
+    println!("    -v, --version            Print version\n");
+    println!("Use 's7forge <COMMAND> --help' for more information on a specific command.");
+}
+
+fn print_version() {
+    println!("s7forge {}", env!("CARGO_PKG_VERSION"));
 }

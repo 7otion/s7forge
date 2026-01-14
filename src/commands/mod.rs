@@ -1,3 +1,4 @@
+pub mod app_installation_path;
 pub mod check_item_download;
 pub mod clear_cache;
 pub mod collection_items;

@@ -55,6 +55,10 @@ fn test_cli_help() {
         stdout.contains("steam-library-paths"),
         "Help should list 'steam-library-paths' command"
     );
+    assert!(
+        stdout.contains("app-installation-path"),
+        "Help should list 'app-installation-path' command"
+    );
 
     assert!(
         stdout.contains("--help"),

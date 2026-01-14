@@ -1,4 +1,5 @@
 pub mod steam_tests;
+pub mod test_app_installation_path;
 pub mod test_clear_cache;
 pub mod test_cli_help;
 pub mod test_discover_tags_help;

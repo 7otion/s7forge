@@ -95,6 +95,9 @@ s7forge workshop-path --app-id 548430
 # List Steam library paths
 s7forge steam-library-paths
 
+# Get installation path of an app
+s7forge app-installation-path --app-id 1142710
+
 # Clear cache
 s7forge clear-cache
 ```
