@@ -5,8 +5,8 @@ use crate::commands::steam_library_paths::steam_library_paths;
 use crate::utils::extract_quoted_strings::extract_quoted_strings;
 
 pub fn app_installation_path(app_id: u32) -> Result<String, String> {
-    let library_paths = steam_library_paths()
-        .map_err(|e| format!("Failed to get Steam library paths: {}", e))?;
+    let library_paths =
+        steam_library_paths().map_err(|e| format!("Failed to get Steam library paths: {}", e))?;
 
     for library_path in library_paths {
         let steamapps_path = Path::new(&library_path).join("steamapps");
