@@ -28,7 +28,7 @@ pub fn steam_library_paths() -> Result<Vec<String>, String> {
                     .to_str()
                     .unwrap_or("")
                     .to_string();
-                library_folder_paths.push(lib_path);
+                library_folder_paths.push(lib_path.replace("\\\\", "\\"));
             }
         }
     }
