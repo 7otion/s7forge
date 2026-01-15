@@ -14,6 +14,7 @@ use crate::utils::get_cache_dir::get_cache_dir;
 #[derive(Debug, Encode, Decode)]
 pub struct WorkshopItemCache {
     pub items: FxHashMap<u64, WorkshopItem>,
+    pub timestamp: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Encode, Decode)]
@@ -55,7 +56,15 @@ pub async fn workshop_items(
             if let Ok((cache_entry, _)) =
                 bincode::decode_from_slice::<WorkshopItemCache, _>(&cache_content, bincode_config)
             {
-                cached_items = cache_entry.items;
+                let now = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or(std::time::Duration::ZERO)
+                    .as_secs();
+                let cache_duration_secs = 24 * 60 * 60; // 24 hours
+
+                if now.saturating_sub(cache_entry.timestamp) < cache_duration_secs {
+                    cached_items = cache_entry.items;
+                }
             }
         }
     }
@@ -157,8 +166,13 @@ pub async fn workshop_items(
     for item in &fetched_items {
         cached_items.insert(item.published_file_id, item.clone());
     }
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or(std::time::Duration::ZERO)
+        .as_secs();
     let cache_struct = WorkshopItemCache {
         items: cached_items.clone(),
+        timestamp,
     };
     let serialized_cache = bincode::encode_to_vec(&cache_struct, bincode_config)
         .map_err(|e| format!("Failed to serialize cache: {:?}", e))?;
