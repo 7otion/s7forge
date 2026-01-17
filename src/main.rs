@@ -1,9 +1,11 @@
 mod cli;
 mod commands;
 mod core;
+mod help;
 mod utils;
 
 use cli::{Command, parse_args};
+use serde_json::json;
 
 #[tokio::main]
 async fn main() {
@@ -15,7 +17,59 @@ async fn main() {
         }
     };
 
-    let result = match command {
+    let result = execute_command(command).await;
+
+    match result {
+        Ok(output) => {
+            println!("{}", output);
+            std::process::exit(0);
+        }
+        Err(error) => {
+            eprintln!("Error: {:?}", error);
+            std::process::exit(1);
+        }
+    }
+}
+
+async fn execute_command(command: Command) -> Result<String, String> {
+    match command {
+        Command::Combined { commands } => {
+            let mut results = serde_json::Map::new();
+
+            for (idx, cmd) in commands.into_iter().enumerate() {
+                let key = match &cmd {
+                    Command::SubscribedItems { .. } => "subscribed-items".to_string(),
+                    Command::WorkshopPath { .. } => "workshop-path".to_string(),
+                    Command::SearchWorkshop { .. } => format!("search-workshop-{}", idx),
+                    Command::WorkshopItems { .. } => format!("workshop-items-{}", idx),
+                    Command::CheckItemDownload { .. } => format!("check-item-download-{}", idx),
+                    Command::CollectionItems { .. } => format!("collection-items-{}", idx),
+                    Command::DiscoverTags { .. } => format!("discover-tags-{}", idx),
+                    _ => format!("command-{}", idx),
+                };
+
+                match execute_single_command(cmd).await {
+                    Ok(output) => {
+                        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&output) {
+                            results.insert(key, value);
+                        } else {
+                            results.insert(key, json!(output));
+                        }
+                    }
+                    Err(error) => {
+                        results.insert(key, json!({ "error": error }));
+                    }
+                }
+            }
+
+            Ok(serde_json::to_string_pretty(&results).unwrap())
+        }
+        cmd => execute_single_command(cmd).await,
+    }
+}
+
+async fn execute_single_command(command: Command) -> Result<String, String> {
+    match command {
         Command::CheckItemDownload { app_id, item_id } => {
             commands::check_item_download::check_item_download(app_id, item_id)
                 .await
@@ -72,16 +126,6 @@ async fn main() {
         Command::DiscoverTags { app_id } => commands::discover_tags::discover_tags(app_id)
             .await
             .map(|tags| serde_json::to_string_pretty(&tags).unwrap()),
-    };
-
-    match result {
-        Ok(output) => {
-            println!("{}", output);
-            std::process::exit(0);
-        }
-        Err(error) => {
-            eprintln!("Error: {:?}", error);
-            std::process::exit(1);
-        }
+        Command::Combined { .. } => unreachable!("Combined should be handled in execute_command"),
     }
 }
