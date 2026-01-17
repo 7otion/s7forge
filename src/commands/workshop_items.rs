@@ -2,7 +2,7 @@ use bincode::{Decode, Encode};
 use std::fs;
 
 use futures_util::FutureExt;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use serde::Serialize;
 use steamworks::{PublishedFileId, SteamId};
 
@@ -14,6 +14,7 @@ use crate::utils::get_cache_dir::get_cache_dir;
 #[derive(Debug, Encode, Decode)]
 pub struct WorkshopItemCache {
     pub items: FxHashMap<u64, WorkshopItem>,
+    pub deleted_items: FxHashSet<u64>,
     pub timestamp: u64,
 }
 
@@ -51,6 +52,7 @@ pub async fn workshop_items(
     let bincode_config = bincode::config::standard();
 
     let mut cached_items: FxHashMap<u64, WorkshopItem> = FxHashMap::default();
+    let mut deleted_items: FxHashSet<u64> = FxHashSet::default();
     if cache_path.exists() {
         if let Ok(cache_content) = fs::read(&cache_path) {
             if let Ok((cache_entry, _)) =
@@ -64,6 +66,7 @@ pub async fn workshop_items(
 
                 if now.saturating_sub(cache_entry.timestamp) < cache_duration_secs {
                     cached_items = cache_entry.items;
+                    deleted_items = cache_entry.deleted_items;
                 }
             }
         }
@@ -71,9 +74,10 @@ pub async fn workshop_items(
 
     let ids_to_fetch: Vec<u64> = item_ids
         .iter()
-        .filter(|id| !cached_items.contains_key(id))
+        .filter(|id| !cached_items.contains_key(id) && !deleted_items.contains(id))
         .cloned()
         .collect();
+
     if ids_to_fetch.is_empty() {
         let workshop_items: Vec<WorkshopItem> = item_ids
             .iter()
@@ -102,6 +106,7 @@ pub async fn workshop_items(
     let steam_client = steam_manager::initialize_client(steam_game_id).await?;
 
     let (tx, mut rx) = tokio::sync::mpsc::channel(32);
+    let ids_for_tracking = ids_to_fetch.clone(); // Keep for later to track missing items
     let items_task = tokio::task::spawn_blocking(move || {
         let ugc = steam_client.ugc();
         let (tx_inner, rx_inner) = std::sync::mpsc::channel();
@@ -154,6 +159,7 @@ pub async fn workshop_items(
     }
 
     let items_result = items_result.unwrap()?;
+
     let fetched_items = items_result
         .items
         .into_iter()
@@ -163,8 +169,19 @@ pub async fn workshop_items(
         })
         .collect::<Vec<WorkshopItem>>();
 
+    // Track which IDs we fetched to cache negative results (deleted/missing items)
+    let fetched_ids: rustc_hash::FxHashSet<u64> =
+        fetched_items.iter().map(|i| i.published_file_id).collect();
+
     for item in &fetched_items {
         cached_items.insert(item.published_file_id, item.clone());
+    }
+
+    // Mark deleted/missing items (they were queried but returned nothing)
+    for id in &ids_for_tracking {
+        if !fetched_ids.contains(id) {
+            deleted_items.insert(*id);
+        }
     }
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -172,6 +189,7 @@ pub async fn workshop_items(
         .as_secs();
     let cache_struct = WorkshopItemCache {
         items: cached_items.clone(),
+        deleted_items: deleted_items.clone(),
         timestamp,
     };
     let serialized_cache = bincode::encode_to_vec(&cache_struct, bincode_config)
@@ -190,7 +208,7 @@ pub async fn workshop_items(
 
     let creator_names = fetch_creator_names(creator_ids, steam_game_id).await?;
 
-    let result = final_items
+    Ok(final_items
         .into_iter()
         .map(|item| {
             let owner = item.owner.clone();
@@ -200,7 +218,5 @@ pub async fn workshop_items(
                 .unwrap_or_else(|| "[unknown]".to_string());
             EnhancedWorkshopItem::new(item, owner.steam_id64.to_string(), creator_name)
         })
-        .collect();
-
-    Ok(result)
+        .collect())
 }
