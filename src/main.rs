@@ -27,7 +27,7 @@ async fn main() {
             std::process::exit(0);
         }
         Err(error) => {
-            eprintln!("Error: {:?}", error);
+            eprintln!("Error: {}", error);
             std::process::exit(1);
         }
     }

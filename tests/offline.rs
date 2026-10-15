@@ -246,3 +246,13 @@ fn item_ids_are_required() {
         );
     }
 }
+
+/// Callers show these messages to users, so they must be plain text, not Rust debug strings.
+#[test]
+fn runtime_errors_are_plain_text() {
+    let stderr = s7forge(&["app-installation-path", "--app-id", "1"]).error();
+    assert_eq!(
+        stderr.trim_end(),
+        "Error: App 1 is not installed or manifest file not found"
+    );
+}
