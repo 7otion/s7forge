@@ -28,15 +28,6 @@ lexopt = "0.3"
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55.0"
 
-[dev-dependencies]
-tokio-test = "0.4.4"
-dotenv = "0.15.0"
-
-# Disable unit tests since we only use integration tests
-[[test]]
-name = "integration_tests"
-path = "tests/integration_tests.rs"
-
 [[bin]]
 name = "s7forge"
 test = false

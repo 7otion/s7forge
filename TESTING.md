@@ -1,53 +1,38 @@
 # Testing Guide
 
-This project includes comprehensive automated tests to ensure all commands work as expected.
+## Requirements
 
-## Setup
+- Steam must be running and logged in to an account that owns
+  **Total War: WARHAMMER III** (app id `1142710`) and has it installed.
+- The account must be subscribed to workshop item `2858004741` (a ~13 KB mod).
 
-1. **Copy the environment template:**
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Configure your test values in `.env`:**
-   - `TEST_APP_ID`: Steam App ID for a game you want to test with
-   - `TEST_ITEM_ID`: A workshop item ID for testing (used for both basic testing and subscription tests)
-   - `TEST_COLLECTION_ID`: A workshop collection ID for testing
+The fixtures live in `tests/common/mod.rs`.
 
 ## Running Tests
 
-### Run ALL Tests (One Command)
-```bash
-cargo test -- --include-ignored
-```
-**This single command runs everything** - safe tests, Steam-dependent tests, and subscription tests.
-
-⚠️ **WARNING**: This includes tests that will subscribe/unsubscribe from workshop items!
-
-### Run Only Safe Tests (No Steam Modifications)
 ```bash
 cargo test
 ```
-This runs only tests that don't modify your Steam subscriptions.
 
-### Run Only Steam Modification Tests
+This runs:
+
+- `tests/offline.rs`: commands that never touch the Steam API (CLI parsing, cache, local paths).
+- `tests/steam.rs`: commands that talk to the Steam API. Each test fails immediately if `steam.exe` is not running.
+
+### Subscription tests
+
 ```bash
 cargo test -- --ignored
 ```
-This runs only the tests that modify Steam subscriptions.
 
-## Test Behavior
+`subscribe_and_unsubscribe_round_trip` really changes the account's subscriptions. It then
+restores the original state, so it is ignored by default.
 
-- **Subscription Test Intelligence**: The `test_subscribe_and_unsubscribe` test is smart - it checks your current subscription state and restores it after testing
-- **Graceful Failure**: Tests expect commands to either succeed or fail gracefully with error messages
-- **JSON Validation**: All tests verify that commands return valid JSON
-- **Steam Availability**: Tests automatically detect if Steam is available and skip Steam-dependent tests if needed
+## How tests run the binary
 
-## What Gets Tested
+Tests run the binary that cargo built (`CARGO_BIN_EXE_s7forge`), not `cargo run`.
+Cargo puts the steamworks-sys output folder on `PATH` for test processes, so
+`steam_api64.dll` is found without copying it next to the executable.
 
-- **CLI Help Commands**: Verify help output is correct
-- **Workshop Item Operations**: Fetch item info, check downloads, browse collections
-- **Search Operations**: Test all search sorting methods and tag discovery
-- **Cache Operations**: Test cache clearing
-- **Subscription Operations**: Subscribe/unsubscribe while preserving your original state
-- **JSON Output**: All commands verified to return valid JSON
+A test passes only when the command exits with code 0 **and** its entire stdout
+parses as a single JSON document. Failure tests require exit code 1 and an empty stdout.

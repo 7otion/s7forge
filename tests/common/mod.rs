@@ -1,0 +1,117 @@
+#![allow(dead_code)]
+
+use serde_json::Value;
+use std::process::{Command, Output};
+
+/// Total War: WARHAMMER III. Every Steam fixture below belongs to this app.
+pub const APP_ID: &str = "1142710";
+/// Small (~13 KB) Community item that the test account is subscribed to.
+pub const ITEM_ID: &str = "2858004741";
+/// Collection with ~10 children.
+pub const COLLECTION_ID: &str = "3816852595";
+
+pub struct Run {
+    pub output: Output,
+}
+
+impl Run {
+    pub fn code(&self) -> Option<i32> {
+        self.output.status.code()
+    }
+
+    pub fn stdout(&self) -> String {
+        String::from_utf8_lossy(&self.output.stdout).into_owned()
+    }
+
+    pub fn stderr(&self) -> String {
+        String::from_utf8_lossy(&self.output.stderr).into_owned()
+    }
+
+    /// Asserts a successful run whose entire stdout is a single JSON document.
+    pub fn json(&self) -> Value {
+        assert_eq!(
+            self.code(),
+            Some(0),
+            "expected exit code 0\nstderr:\n{}\nstdout:\n{}",
+            self.stderr(),
+            self.stdout()
+        );
+        let stdout = self.stdout();
+        serde_json::from_str(&stdout)
+            .unwrap_or_else(|e| panic!("stdout is not a single JSON document ({e}):\n{stdout}"))
+    }
+
+    /// Asserts a failed run (exit code 1, nothing on stdout) and returns stderr.
+    pub fn error(&self) -> String {
+        assert_eq!(
+            self.code(),
+            Some(1),
+            "expected exit code 1\nstderr:\n{}\nstdout:\n{}",
+            self.stderr(),
+            self.stdout()
+        );
+        assert!(
+            self.stdout().trim().is_empty(),
+            "expected empty stdout on failure, got:\n{}",
+            self.stdout()
+        );
+        self.stderr()
+    }
+}
+
+pub fn command() -> Command {
+    Command::new(env!("CARGO_BIN_EXE_s7forge"))
+}
+
+pub fn run(mut command: Command) -> Run {
+    let output = command.output().expect("failed to spawn s7forge");
+    Run { output }
+}
+
+pub fn s7forge(args: &[&str]) -> Run {
+    let mut cmd = command();
+    cmd.args(args);
+    run(cmd)
+}
+
+pub fn require_steam() {
+    let output = Command::new("tasklist")
+        .args(["/FI", "IMAGENAME eq steam.exe", "/NH"])
+        .output()
+        .expect("failed to run tasklist");
+    assert!(
+        String::from_utf8_lossy(&output.stdout)
+            .to_ascii_lowercase()
+            .contains("steam.exe"),
+        "Steam must be running (and own app {APP_ID}) for this test"
+    );
+}
+
+pub fn as_array(value: &Value) -> &Vec<Value> {
+    value
+        .as_array()
+        .unwrap_or_else(|| panic!("expected a JSON array, got: {value}"))
+}
+
+pub fn assert_workshop_item(item: &Value) {
+    let field = |name: &str| {
+        item.get(name)
+            .unwrap_or_else(|| panic!("workshop item is missing '{name}': {item}"))
+    };
+
+    assert!(field("published_file_id").as_u64().unwrap() > 0);
+    assert!(!field("title").as_str().unwrap().is_empty());
+    assert!(field("description").is_string());
+    assert!(field("owner").is_object());
+    assert!(field("time_created").as_u64().unwrap() > 0);
+    assert!(field("time_updated").as_u64().unwrap() > 0);
+    assert!(field("tags").is_string());
+    assert!(field("url").is_string());
+    assert!(field("num_upvotes").is_u64());
+    assert!(field("num_downvotes").is_u64());
+    assert!(field("file_size").is_u64());
+    assert!(field("required_items").is_array());
+    assert_eq!(field("file_type").as_str().unwrap(), "Community");
+    assert!(!field("creator_id").as_str().unwrap().is_empty());
+    assert!(!field("creator_name").as_str().unwrap().is_empty());
+}
