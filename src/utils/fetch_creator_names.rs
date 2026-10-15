@@ -5,7 +5,7 @@ use std::fs;
 use steamworks::SteamId;
 
 use crate::core::steam_manager;
-use crate::utils::get_cache_dir::get_cache_dir;
+use crate::utils::get_cache_dir::{cache_file, write_cache_file};
 
 #[derive(Debug, Encode, Decode)]
 struct CreatorNameCache {
@@ -22,11 +22,7 @@ pub async fn fetch_creator_names(
 
     let steam_client = steam_manager::initialize_client(steam_game_id).await?;
 
-    let cache_dir = get_cache_dir()?;
-    fs::create_dir_all(&cache_dir)
-        .map_err(|e| format!("Failed to create cache directory: {:?}", e))?;
-
-    let cache_path = cache_dir.join("creator_names_cache.bin");
+    let cache_path = cache_file("creator_names_cache.bin");
     let bincode_config = bincode::config::standard();
 
     let mut cached_names: FxHashMap<u64, String> = FxHashMap::default();
@@ -119,9 +115,9 @@ pub async fn fetch_creator_names(
     let cache_struct = CreatorNameCache {
         names: cached_names.clone(),
     };
-    let serialized_cache = bincode::encode_to_vec(&cache_struct, bincode_config)
-        .map_err(|e| format!("Failed to serialize creator name cache: {:?}", e))?;
-    let _ = fs::write(&cache_path, serialized_cache);
+    if let Ok(serialized_cache) = bincode::encode_to_vec(&cache_struct, bincode_config) {
+        write_cache_file(&cache_path, &serialized_cache);
+    }
     let result = creator_ids
         .into_iter()
         .filter_map(|id| {

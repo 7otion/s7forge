@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::commands::steam_library_paths::steam_library_paths;
 use crate::utils::extract_quoted_strings::extract_quoted_strings;
-use crate::utils::get_cache_dir::get_cache_dir;
+use crate::utils::get_cache_dir::{cache_file, write_cache_file};
 
 #[derive(Debug, Encode, Decode)]
 struct AppInstallPathCache {
@@ -16,8 +16,8 @@ struct AppInstallPathCache {
 
 pub fn app_installation_path(app_id: u32) -> Result<String, String> {
     // Try to load from cache
-    if let Ok(cache_dir) = get_cache_dir() {
-        let cache_path = cache_dir.join("app_install_path_cache.bin");
+    {
+        let cache_path = cache_file("app_install_path_cache.bin");
         if cache_path.exists() {
             if let Ok(cache_content) = fs::read(&cache_path) {
                 let config = bincode::config::standard();
@@ -84,9 +84,8 @@ pub fn app_installation_path(app_id: u32) -> Result<String, String> {
     };
 
     // Save to cache
-    if let Ok(cache_dir) = get_cache_dir() {
-        let _ = fs::create_dir_all(&cache_dir);
-        let cache_path = cache_dir.join("app_install_path_cache.bin");
+    {
+        let cache_path = cache_file("app_install_path_cache.bin");
 
         let mut cache = if cache_path.exists() {
             if let Ok(cache_content) = fs::read(&cache_path) {
@@ -127,7 +126,7 @@ pub fn app_installation_path(app_id: u32) -> Result<String, String> {
 
         let config = bincode::config::standard();
         if let Ok(encoded) = bincode::encode_to_vec(&cache, config) {
-            let _ = fs::write(&cache_path, encoded);
+            write_cache_file(&cache_path, &encoded);
         }
     }
 

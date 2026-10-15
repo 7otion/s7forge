@@ -156,7 +156,8 @@ s7forge clear-cache
 
 ### Caching
 
-- Creator names and workshop items cached in `{executable_directory}/cache/`
+- Cache files live in `%LOCALAPPDATA%\s7forge\cache\`. Set the `S7FORGE_CACHE_DIR` environment variable to use another directory.
+- Caching is best-effort: if the cache directory cannot be read or written, commands still succeed without it.
 - Use `s7forge clear-cache` to clear all cached data
 
 ## License

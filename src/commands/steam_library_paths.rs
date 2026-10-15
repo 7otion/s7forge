@@ -4,7 +4,7 @@ use std::{fs, path::Path};
 
 use crate::core::steam_install_paths::steam_install_paths;
 use crate::utils::extract_quoted_strings::extract_quoted_strings;
-use crate::utils::get_cache_dir::get_cache_dir;
+use crate::utils::get_cache_dir::{cache_file, write_cache_file};
 
 #[derive(Debug, Encode, Decode)]
 struct LibraryPathsCache {
@@ -14,8 +14,8 @@ struct LibraryPathsCache {
 
 pub fn steam_library_paths() -> Result<Vec<String>, String> {
     // Try to load from cache
-    if let Ok(cache_dir) = get_cache_dir() {
-        let cache_path = cache_dir.join("library_paths_cache.bin");
+    {
+        let cache_path = cache_file("library_paths_cache.bin");
         if cache_path.exists() {
             if let Ok(cache_content) = fs::read(&cache_path) {
                 let config = bincode::config::standard();
@@ -66,9 +66,8 @@ pub fn steam_library_paths() -> Result<Vec<String>, String> {
     }
 
     // Save to cache
-    if let Ok(cache_dir) = get_cache_dir() {
-        let _ = fs::create_dir_all(&cache_dir);
-        let cache_path = cache_dir.join("library_paths_cache.bin");
+    {
+        let cache_path = cache_file("library_paths_cache.bin");
 
         let cache = LibraryPathsCache {
             paths: library_folder_paths.clone(),
@@ -80,7 +79,7 @@ pub fn steam_library_paths() -> Result<Vec<String>, String> {
 
         let config = bincode::config::standard();
         if let Ok(encoded) = bincode::encode_to_vec(&cache, config) {
-            let _ = fs::write(&cache_path, encoded);
+            write_cache_file(&cache_path, &encoded);
         }
     }
 

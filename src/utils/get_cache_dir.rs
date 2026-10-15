@@ -1,17 +1,32 @@
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 
-pub fn get_cache_dir() -> Result<PathBuf, String> {
-    let exe_path =
-        std::env::current_exe().map_err(|e| format!("Failed to get executable path: {}", e))?;
-    let exe_dir = exe_path
-        .parent()
-        .ok_or("Failed to get executable directory")?;
-    let cache_dir = exe_dir.join("cache");
+pub const CACHE_DIR_ENV: &str = "S7FORGE_CACHE_DIR";
 
-    if !cache_dir.exists() {
-        std::fs::create_dir_all(&cache_dir)
-            .map_err(|e| format!("Failed to create cache directory: {:?}", e))?;
+/// `S7FORGE_CACHE_DIR` when set, otherwise `%LOCALAPPDATA%\s7forge\cache`.
+///
+/// The directory is not created here. Every cache is optional: a cache that
+/// cannot be read or written behaves like an empty cache.
+pub fn get_cache_dir() -> PathBuf {
+    if let Some(dir) = std::env::var_os(CACHE_DIR_ENV).filter(|dir| !dir.is_empty()) {
+        return PathBuf::from(dir);
     }
 
-    Ok(cache_dir)
+    std::env::var_os("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir)
+        .join("s7forge")
+        .join("cache")
+}
+
+pub fn cache_file(name: &str) -> PathBuf {
+    get_cache_dir().join(name)
+}
+
+/// Best-effort write; failures are ignored because the cache is optional.
+pub fn write_cache_file(path: &Path, contents: &[u8]) {
+    if let Some(dir) = path.parent() {
+        let _ = fs::create_dir_all(dir);
+    }
+    let _ = fs::write(path, contents);
 }

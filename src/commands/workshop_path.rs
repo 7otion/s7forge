@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::core::steam_install_paths::steam_install_paths;
 use crate::utils::extract_quoted_strings::extract_quoted_strings;
-use crate::utils::get_cache_dir::get_cache_dir;
+use crate::utils::get_cache_dir::{cache_file, write_cache_file};
 
 #[derive(Debug, Encode, Decode)]
 struct WorkshopPathCache {
@@ -16,8 +16,8 @@ struct WorkshopPathCache {
 
 pub fn workshop_path(app_id: u32) -> Option<String> {
     // Try to load from cache
-    if let Ok(cache_dir) = get_cache_dir() {
-        let cache_path = cache_dir.join("workshop_path_cache.bin");
+    {
+        let cache_path = cache_file("workshop_path_cache.bin");
         if cache_path.exists() {
             if let Ok(cache_content) = fs::read(&cache_path) {
                 let config = bincode::config::standard();
@@ -91,9 +91,8 @@ pub fn workshop_path(app_id: u32) -> Option<String> {
     };
 
     // Save to cache
-    if let Ok(cache_dir) = get_cache_dir() {
-        let _ = fs::create_dir_all(&cache_dir);
-        let cache_path = cache_dir.join("workshop_path_cache.bin");
+    {
+        let cache_path = cache_file("workshop_path_cache.bin");
 
         let mut cache = if cache_path.exists() {
             if let Ok(cache_content) = fs::read(&cache_path) {
@@ -134,7 +133,7 @@ pub fn workshop_path(app_id: u32) -> Option<String> {
 
         let config = bincode::config::standard();
         if let Ok(encoded) = bincode::encode_to_vec(&cache, config) {
-            let _ = fs::write(&cache_path, encoded);
+            write_cache_file(&cache_path, &encoded);
         }
     }
 

@@ -12,7 +12,7 @@ use crate::commands::workshop_items::EnhancedWorkshopItem;
 use crate::core::steam_manager;
 use crate::core::workshop_item::workshop::{WorkshopItem, WorkshopItemsResult};
 use crate::utils::fetch_creator_names::fetch_creator_names;
-use crate::utils::get_cache_dir::get_cache_dir;
+use crate::utils::get_cache_dir::{cache_file, write_cache_file};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
 struct SearchCacheKey {
@@ -39,51 +39,26 @@ impl SearchCache {
     const CACHE_DURATION_MINUTES: u64 = 10;
 
     fn load_from_disk() -> Self {
-        match Self::get_cache_file_path() {
-            Ok(cache_path) => {
-                if cache_path.exists() {
-                    match fs::read(&cache_path) {
-                        Ok(data) => {
-                            let config = bincode::config::standard();
-                            match bincode::decode_from_slice(&data, config) {
-                                Ok((cache, _)) => {
-                                    let mut cleaned_cache: SearchCache = cache;
-                                    cleaned_cache.clean_expired_entries();
-                                    return cleaned_cache;
-                                }
-                                Err(e) => {
-                                    eprintln!("Failed to decode search cache: {}", e);
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            eprintln!("Failed to read search cache file: {}", e);
-                        }
-                    }
-                }
+        let Ok(data) = fs::read(Self::cache_file_path()) else {
+            return Self::default();
+        };
+        match bincode::decode_from_slice::<SearchCache, _>(&data, bincode::config::standard()) {
+            Ok((mut cache, _)) => {
+                cache.clean_expired_entries();
+                cache
             }
-            Err(e) => {
-                eprintln!("Failed to get cache file path: {}", e);
-            }
+            Err(_) => Self::default(),
         }
-        Self::default()
     }
 
-    fn save_to_disk(&self) -> Result<(), String> {
-        let cache_path = Self::get_cache_file_path()?;
-        let config = bincode::config::standard();
-        let encoded = bincode::encode_to_vec(self, config)
-            .map_err(|e| format!("Failed to encode search cache: {}", e))?;
-
-        fs::write(&cache_path, encoded)
-            .map_err(|e| format!("Failed to write search cache to disk: {}", e))?;
-
-        Ok(())
+    fn save_to_disk(&self) {
+        if let Ok(encoded) = bincode::encode_to_vec(self, bincode::config::standard()) {
+            write_cache_file(&Self::cache_file_path(), &encoded);
+        }
     }
 
-    fn get_cache_file_path() -> Result<PathBuf, String> {
-        let cache_dir = get_cache_dir()?;
-        Ok(cache_dir.join("search_workshop_cache.bin"))
+    fn cache_file_path() -> PathBuf {
+        cache_file("search_workshop_cache.bin")
     }
 
     fn clean_expired_entries(&mut self) {
@@ -127,9 +102,7 @@ impl SearchCache {
 
         self.clean_expired_entries();
 
-        if let Err(e) = self.save_to_disk() {
-            eprintln!("Warning: Failed to save search cache to disk: {}", e);
-        }
+        self.save_to_disk();
     }
 }
 

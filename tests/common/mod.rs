@@ -1,7 +1,11 @@
 #![allow(dead_code)]
 
 use serde_json::Value;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
+use std::sync::atomic::{AtomicU32, Ordering};
+
+pub const CACHE_DIR_ENV: &str = "S7FORGE_CACHE_DIR";
 
 /// Total War: WARHAMMER III. Every Steam fixture below belongs to this app.
 pub const APP_ID: &str = "1142710";
@@ -59,6 +63,34 @@ impl Run {
     }
 }
 
+/// A uniquely named directory under the system temp folder, removed on drop.
+pub struct TempDir(PathBuf);
+
+impl TempDir {
+    pub fn new(label: &str) -> Self {
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
+        let unique = format!(
+            "{label}-{}-{}",
+            std::process::id(),
+            COUNTER.fetch_add(1, Ordering::Relaxed)
+        );
+        let path = std::env::temp_dir().join("s7forge-tests").join(unique);
+        let _ = std::fs::remove_dir_all(&path);
+        std::fs::create_dir_all(&path).expect("failed to create temp dir");
+        Self(path)
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl Drop for TempDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
 pub fn command() -> Command {
     Command::new(env!("CARGO_BIN_EXE_s7forge"))
 }
@@ -68,9 +100,15 @@ pub fn run(mut command: Command) -> Run {
     Run { output }
 }
 
+/// Runs s7forge with a fresh, empty cache so no test sees another test's cached data.
 pub fn s7forge(args: &[&str]) -> Run {
+    let cache = TempDir::new("cache");
+    s7forge_with_cache(cache.path(), args)
+}
+
+pub fn s7forge_with_cache(cache_dir: &Path, args: &[&str]) -> Run {
     let mut cmd = command();
-    cmd.args(args);
+    cmd.args(args).env(CACHE_DIR_ENV, cache_dir);
     run(cmd)
 }
 

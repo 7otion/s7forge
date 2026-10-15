@@ -12,7 +12,7 @@ pub struct ClearCacheResult {
 }
 
 pub fn clear_cache() -> Result<ClearCacheResult, String> {
-    let cache_dir = get_cache_dir()?;
+    let cache_dir = get_cache_dir();
 
     if !cache_dir.exists() {
         return Ok(ClearCacheResult {

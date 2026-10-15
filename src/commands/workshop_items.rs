@@ -9,7 +9,7 @@ use steamworks::{PublishedFileId, SteamId};
 use crate::core::steam_manager;
 use crate::core::workshop_item::workshop::{WorkshopItem, WorkshopItemsResult};
 use crate::utils::fetch_creator_names::fetch_creator_names;
-use crate::utils::get_cache_dir::get_cache_dir;
+use crate::utils::get_cache_dir::{cache_file, write_cache_file};
 
 #[derive(Debug, Encode, Decode)]
 pub struct WorkshopItemCache {
@@ -44,11 +44,7 @@ pub async fn workshop_items(
         return Ok(Vec::new());
     }
 
-    let cache_dir = get_cache_dir()?;
-    fs::create_dir_all(&cache_dir)
-        .map_err(|e| format!("Failed to create cache directory: {:?}", e))?;
-
-    let cache_path = cache_dir.join("workshop_items_cache.bin");
+    let cache_path = cache_file("workshop_items_cache.bin");
     let bincode_config = bincode::config::standard();
 
     let mut cached_items: FxHashMap<u64, WorkshopItem> = FxHashMap::default();
@@ -192,9 +188,9 @@ pub async fn workshop_items(
         deleted_items: deleted_items.clone(),
         timestamp,
     };
-    let serialized_cache = bincode::encode_to_vec(&cache_struct, bincode_config)
-        .map_err(|e| format!("Failed to serialize cache: {:?}", e))?;
-    let _ = fs::write(&cache_path, serialized_cache);
+    if let Ok(serialized_cache) = bincode::encode_to_vec(&cache_struct, bincode_config) {
+        write_cache_file(&cache_path, &serialized_cache);
+    }
 
     let final_items: Vec<WorkshopItem> = item_ids
         .iter()

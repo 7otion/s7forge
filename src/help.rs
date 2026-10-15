@@ -72,6 +72,10 @@ pub fn print_clear_cache_help() {
     println!("    s7forge clear-cache\n");
     println!("OPTIONS:");
     println!("    -h, --help    Print help\n");
+    println!("CACHE LOCATION:");
+    println!(
+        "    %LOCALAPPDATA%\\s7forge\\cache, or the directory in the S7FORGE_CACHE_DIR environment variable\n"
+    );
     println!("EXAMPLE:");
     println!("    s7forge clear-cache");
 }
