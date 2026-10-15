@@ -8,10 +8,9 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use steamworks::{AppIDs, AppId, UGCQueryType, UGCType};
 use tokio::sync::mpsc;
 
-use crate::commands::workshop_items::EnhancedWorkshopItem;
+use crate::commands::workshop_items::{EnhancedWorkshopItem, with_creator_names};
 use crate::core::steam_manager;
 use crate::core::workshop_item::workshop::{WorkshopItem, WorkshopItemsResult};
-use crate::utils::fetch_creator_names::fetch_creator_names;
 use crate::utils::get_cache_dir::{cache_file, write_cache_file};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
@@ -243,24 +242,7 @@ pub async fn search_workshop(
         return Ok(Vec::new());
     }
 
-    let creator_ids: Vec<steamworks::SteamId> = workshop_items
-        .iter()
-        .map(|item| steamworks::SteamId::from_raw(item.owner.steam_id64))
-        .collect();
-
-    let creator_names = fetch_creator_names(creator_ids, steam_game_id).await?;
-
-    let result: Vec<EnhancedWorkshopItem> = workshop_items
-        .into_iter()
-        .map(|item| {
-            let owner = item.owner.clone();
-            let creator_name = creator_names
-                .get(&item.owner.steam_id64)
-                .cloned()
-                .unwrap_or_else(|| "[unknown]".to_string());
-            EnhancedWorkshopItem::new(item, owner.steam_id64.to_string(), creator_name)
-        })
-        .collect();
+    let result = with_creator_names(steam_game_id, workshop_items).await?;
 
     cache.insert(cache_key, result.clone());
 

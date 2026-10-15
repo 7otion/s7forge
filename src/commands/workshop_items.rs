@@ -6,7 +6,7 @@ use steamworks::{PublishedFileId, SteamId};
 
 use crate::core::steam_manager;
 use crate::core::workshop_item::workshop::{WorkshopItem, WorkshopItemsResult};
-use crate::utils::fetch_creator_names::fetch_creator_names;
+use crate::utils::fetch_creator_names::{UNKNOWN_NAME, fetch_creator_names};
 use crate::utils::get_cache_dir::cache_file;
 use crate::utils::timed_cache::{TimedCache, now_secs};
 
@@ -170,7 +170,7 @@ pub async fn with_creator_names(
             let creator_name = creator_names
                 .get(&item.owner.steam_id64)
                 .cloned()
-                .unwrap_or_else(|| "[unknown]".to_string());
+                .unwrap_or_else(|| UNKNOWN_NAME.to_string());
             EnhancedWorkshopItem::new(item, owner.steam_id64.to_string(), creator_name)
         })
         .collect())
