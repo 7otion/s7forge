@@ -230,3 +230,16 @@ fn subscribe_and_unsubscribe_round_trip() {
     assert_eq!(value[0]["success"], true);
     assert_eq!(subscribed(), initially);
 }
+
+#[test]
+fn collection_items_for_missing_item_fails_cleanly() {
+    require_steam();
+    for missing in ["1", "9999999999"] {
+        let stderr =
+            s7forge(&["collection-items", "--app-id", APP_ID, "--item-id", missing]).error();
+        assert!(
+            stderr.contains("not found"),
+            "unexpected error for {missing}: {stderr}"
+        );
+    }
+}

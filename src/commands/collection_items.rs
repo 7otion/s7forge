@@ -46,12 +46,10 @@ pub async fn collection_items(
             .include_children(true)
             .fetch(move |result| match result {
                 Ok(details) => {
-                    let collection_info = details
-                        .iter()
-                        .next()
-                        .map(|item| item.unwrap())
-                        .ok_or_else(|| "Collection not found".to_string())
-                        .unwrap();
+                    let Some(collection_info) = details.get(0) else {
+                        let _ = tx_inner.send(Err(format!("Collection {} not found", item_id)));
+                        return;
+                    };
 
                     if collection_info.file_type != steamworks::FileType::Collection {
                         let _ = tx_inner.send(Err("Item is not a collection".to_string()));
