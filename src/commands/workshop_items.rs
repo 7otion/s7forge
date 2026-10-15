@@ -10,10 +10,9 @@ use crate::utils::fetch_creator_names::{UNKNOWN_NAME, fetch_creator_names};
 use crate::utils::get_cache_dir::cache_file;
 use crate::utils::timed_cache::{TimedCache, now_secs};
 
-/// How long fetched item details are reused.
-const ITEM_TTL_SECS: u64 = 24 * 60 * 60;
-/// How long "Steam returned nothing for this id" is trusted before asking again.
-const MISSING_ITEM_TTL_SECS: u64 = 60 * 60;
+/// How long fetched item details (including "Steam returned nothing for this
+/// id") are reused. Short, so that `time_updated` reflects new mod versions soon.
+const ITEM_TTL_SECS: u64 = 30 * 60;
 
 /// `None` records an id that Steam returned no Community item for.
 type WorkshopItemCache = TimedCache<u64, Option<WorkshopItem>>;
@@ -48,14 +47,9 @@ pub async fn workshop_items(
     let mut cache = WorkshopItemCache::load(&cache_path);
     let now = now_secs();
 
-    let is_cached = |cache: &WorkshopItemCache, id: &u64| match cache.get(id, now, ITEM_TTL_SECS) {
-        Some(Some(_)) => true,
-        Some(None) => cache.get(id, now, MISSING_ITEM_TTL_SECS).is_some(),
-        None => false,
-    };
     let mut ids_to_fetch: Vec<u64> = item_ids
         .iter()
-        .filter(|id| !is_cached(&cache, id))
+        .filter(|id| cache.get(id, now, ITEM_TTL_SECS).is_none())
         .copied()
         .collect();
     ids_to_fetch.sort_unstable();

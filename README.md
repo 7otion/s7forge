@@ -167,6 +167,10 @@ s7forge clear-cache
 
 - Cache files live in `%LOCALAPPDATA%\s7forge\cache\`. Set the `S7FORGE_CACHE_DIR` environment variable to use another directory.
 - Caching is best-effort: if the cache directory cannot be read or written, commands still succeed without it.
+- What is cached, and for how long:
+  - workshop item details: 30 minutes (so `time_updated` shows new mod versions soon)
+  - creator names: 7 days (looking up an unknown name can take up to 2 seconds)
+  - search results: 10 minutes
 - Use `s7forge clear-cache` to clear all cached data
 
 ## License
