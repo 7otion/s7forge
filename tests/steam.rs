@@ -243,3 +243,22 @@ fn collection_items_for_missing_item_fails_cleanly() {
         );
     }
 }
+
+#[test]
+fn workshop_items_returns_full_description() {
+    require_steam();
+    let value = s7forge(&[
+        "workshop-items",
+        "--app-id",
+        APP_ID,
+        "--item-ids",
+        LONG_DESCRIPTION_ITEM_ID,
+    ])
+    .json();
+    let description = value[0]["description"].as_str().unwrap();
+    assert!(
+        description.chars().count() > 400,
+        "description was truncated to {} chars",
+        description.chars().count()
+    );
+}

@@ -112,6 +112,7 @@ pub async fn workshop_items(
 
         query_handle
             .include_children(true)
+            .set_return_long_description(true)
             .fetch(move |fetch_result| {
                 let _ = tx_inner.send(
                     fetch_result

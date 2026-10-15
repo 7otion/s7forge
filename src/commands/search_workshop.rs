@@ -158,6 +158,7 @@ pub async fn search_workshop(
         let mut configured_query = query_handle
             .set_return_metadata(true)
             .set_return_children(true)
+            .set_return_long_description(true)
             .set_return_additional_previews(true)
             .set_return_key_value_tags(true);
 

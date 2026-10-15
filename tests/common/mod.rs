@@ -11,6 +11,8 @@ pub const CACHE_DIR_ENV: &str = "S7FORGE_CACHE_DIR";
 pub const APP_ID: &str = "1142710";
 /// Small (~13 KB) Community item that the test account is subscribed to.
 pub const ITEM_ID: &str = "2858004741";
+/// "Script debug activator": its description is 471 characters long (checked on the Steam web API).
+pub const LONG_DESCRIPTION_ITEM_ID: &str = "2789857593";
 /// Collection with ~10 children.
 pub const COLLECTION_ID: &str = "3816852595";
 

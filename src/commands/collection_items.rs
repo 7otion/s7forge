@@ -44,6 +44,7 @@ pub async fn collection_items(
 
         query_handle
             .include_children(true)
+            .set_return_long_description(true)
             .fetch(move |result| match result {
                 Ok(details) => {
                     let Some(collection_info) = details.get(0) else {
