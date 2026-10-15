@@ -47,7 +47,7 @@ fn subscribed_items_contains_fixture_item() {
     assert!(
         items
             .iter()
-            .any(|item| item["published_file_id"].to_string() == ITEM_ID),
+            .any(|item| item["published_file_id"].as_u64() == ITEM_ID.parse().ok()),
         "test account must be subscribed to {ITEM_ID}"
     );
 }
@@ -213,7 +213,7 @@ fn subscribe_and_unsubscribe_round_trip() {
     let subscribed = || {
         as_array(&s7forge(&["subscribed-items", "--app-id", APP_ID]).json())
             .iter()
-            .any(|item| item["published_file_id"].to_string() == ITEM_ID)
+            .any(|item| item["published_file_id"].as_u64() == ITEM_ID.parse().ok())
     };
     let initially = subscribed();
     let (first, second) = if initially {
