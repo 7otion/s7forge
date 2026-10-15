@@ -60,3 +60,26 @@ fn cache_dir_env_var_is_used() {
     assert!(value["files_cleared"].as_u64().unwrap() > 0);
     assert_eq!(fs::read_dir(&cache).unwrap().count(), 0);
 }
+
+#[test]
+fn cached_workshop_items_match_fresh_ones() {
+    require_steam();
+    let cache = TempDir::new("reuse");
+    let ids = format!("{ITEM_ID},{LONG_DESCRIPTION_ITEM_ID},1");
+    let args = [
+        "workshop-items",
+        "--app-id",
+        APP_ID,
+        "--item-ids",
+        ids.as_str(),
+    ];
+
+    let fresh = s7forge_with_cache(cache.path(), &args).json();
+    let cached = s7forge_with_cache(cache.path(), &args).json();
+    assert_eq!(
+        as_array(&fresh).len(),
+        2,
+        "id 1 does not exist and must be skipped"
+    );
+    assert_eq!(fresh, cached);
+}
