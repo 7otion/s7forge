@@ -290,3 +290,45 @@ fn subscribe_reports_each_item_even_when_one_fails() {
     assert_eq!(results[1]["success"], true);
     assert!(results[1].get("error").is_none());
 }
+
+/// Re-downloads the ~13 KB fixture item; Steam finishes in about a second.
+#[test]
+fn download_workshop_item_completes_for_subscribed_item() {
+    require_steam();
+    let value = s7forge(&[
+        "download-workshop-item",
+        "--app-id",
+        APP_ID,
+        "--item-id",
+        ITEM_ID,
+    ])
+    .json();
+    assert!(value.is_string());
+
+    let state = s7forge(&[
+        "check-item-download",
+        "--app-id",
+        APP_ID,
+        "--item-id",
+        ITEM_ID,
+    ])
+    .json();
+    assert_eq!(state["download_complete"], true);
+}
+
+#[test]
+fn download_workshop_item_rejects_unsubscribed_item() {
+    require_steam();
+    let stderr = s7forge(&[
+        "download-workshop-item",
+        "--app-id",
+        APP_ID,
+        "--item-id",
+        "1",
+    ])
+    .error();
+    assert!(
+        stderr.contains("not subscribed"),
+        "unexpected error: {stderr}"
+    );
+}
