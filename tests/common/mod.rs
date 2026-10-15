@@ -145,7 +145,12 @@ pub fn assert_workshop_item(item: &Value) {
     assert!(field("owner").is_object());
     assert!(field("time_created").as_u64().unwrap() > 0);
     assert!(field("time_updated").as_u64().unwrap() > 0);
-    assert!(field("tags").is_string());
+    assert!(
+        field("tags")
+            .as_array()
+            .is_some_and(|tags| tags.iter().all(|tag| tag.is_string())),
+        "tags must be an array of strings: {item}"
+    );
     assert!(field("url").is_string());
     assert!(field("num_upvotes").is_u64());
     assert!(field("num_downvotes").is_u64());

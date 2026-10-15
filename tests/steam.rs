@@ -160,10 +160,11 @@ fn search_workshop_with_tag_only_returns_tagged_items() {
     let items = search(&["--tags", "UI", "--sort-by", "recent"]);
     assert!(!items.is_empty());
     for item in &items {
-        let tags = item["tags"].as_str().unwrap();
+        let tags = as_array(&item["tags"]);
         assert!(
-            tags.split(", ").any(|t| t == "UI"),
-            "item lacks UI tag: {tags}"
+            tags.iter()
+                .any(|t| t.as_str().is_some_and(|t| t.eq_ignore_ascii_case("ui"))),
+            "item lacks UI tag: {tags:?}"
         );
     }
 }
@@ -331,4 +332,13 @@ fn download_workshop_item_rejects_unsubscribed_item() {
         stderr.contains("not subscribed"),
         "unexpected error: {stderr}"
     );
+}
+
+/// Tags are passed through exactly as Steam stores them (WH3 uses lowercase
+/// values plus a "mod" type tag); consumers decide what to show.
+#[test]
+fn workshop_items_returns_raw_steam_tags() {
+    require_steam();
+    let value = s7forge(&["workshop-items", "--app-id", APP_ID, "--item-ids", ITEM_ID]).json();
+    assert_eq!(value[0]["tags"], serde_json::json!(["mod", "battle"]));
 }

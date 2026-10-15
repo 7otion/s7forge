@@ -22,94 +22,6 @@
 //
 // Modified by Burak Kartal on [24/06/2025]
 
-use std::collections::HashSet;
-
-fn capitalize(s: String) -> String {
-    let mut chars = s.chars();
-    match chars.next() {
-        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-        None => String::new(),
-    }
-}
-
-fn is_version_tag(tag: &str) -> bool {
-    let tag = tag.trim();
-    if tag.is_empty()
-        || !tag
-            .chars()
-            .next()
-            .unwrap_or(' ')
-            .to_ascii_lowercase()
-            .is_ascii_alphabetic()
-    {
-        return false;
-    }
-
-    let first_char = tag.chars().next().unwrap().to_ascii_lowercase();
-    if first_char != 'v' && first_char != 'e' {
-        return false;
-    }
-
-    let rest = &tag[1..];
-    let cleaned: String = rest.chars().filter(|c| !c.is_whitespace()).collect();
-    if cleaned.is_empty() {
-        return false;
-    }
-
-    is_valid_version_string(&cleaned)
-}
-
-fn is_valid_version_string(s: &str) -> bool {
-    if s.is_empty() {
-        return false;
-    }
-
-    if s.starts_with('.') {
-        return false;
-    }
-
-    let mut chars = s.chars().peekable();
-    let mut has_any_digits = false;
-
-    loop {
-        while let Some(&ch) = chars.peek() {
-            if ch.is_ascii_digit() {
-                chars.next();
-                has_any_digits = true;
-            } else {
-                break;
-            }
-        }
-
-        match chars.peek() {
-            None => break,
-            Some('.') => {
-                chars.next();
-
-                if let Some(&next_ch) = chars.peek() {
-                    if next_ch == 'X' || next_ch == 'x' {
-                        chars.next();
-                        return chars.next().is_none() && has_any_digits;
-                    }
-                }
-            }
-            Some('X') | Some('x') => {
-                chars.next();
-                return chars.next().is_none() && has_any_digits;
-            }
-            _ => return false,
-        }
-    }
-
-    has_any_digits
-}
-
-fn is_filtered_tag(tag: &str) -> bool {
-    let excluded_tags: HashSet<&str> = ["mod", "Singleplayer", "Native"].iter().cloned().collect();
-
-    excluded_tags.contains(tag) || is_version_tag(tag)
-}
-
 pub mod workshop {
     use bincode::{Decode, Encode};
     use serde::Serialize;
@@ -117,8 +29,6 @@ pub mod workshop {
 
     use crate::core::localplayer::PlayerSteamId;
     use crate::core::workshop::UgcItemVisibility;
-
-    use super::{capitalize, is_filtered_tag};
 
     pub enum UGCQueryType {
         RankedByVote,
@@ -352,7 +262,7 @@ pub mod workshop {
         pub visibility: UgcItemVisibility,
         pub banned: bool,
         pub accepted_for_use: bool,
-        pub tags: String,
+        pub tags: Vec<String>,
         pub tags_truncated: bool,
         pub url: String,
         pub num_upvotes: u32,
@@ -412,13 +322,7 @@ pub mod workshop {
                     visibility: item.visibility.into(),
                     banned: item.banned,
                     accepted_for_use: item.accepted_for_use,
-                    tags: item
-                        .tags
-                        .iter()
-                        .filter(|tag| !is_filtered_tag(tag))
-                        .map(|tag| capitalize(tag.clone()).replace("Ui", "UI"))
-                        .collect::<Vec<String>>()
-                        .join(", "),
+                    tags: item.tags,
                     tags_truncated: item.tags_truncated,
                     url: item.url,
                     num_upvotes: item.num_upvotes,

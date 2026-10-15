@@ -135,7 +135,7 @@ s7forge clear-cache
     "visibility": "string",
     "banned": "boolean",
     "accepted_for_use": "boolean",
-    "tags": "string",
+    "tags": "array of strings (exactly as stored on Steam, e.g. [\"mod\", \"battle\"])",
     "tags_truncated": "boolean",
     "url": "string",
     "num_upvotes": "number",

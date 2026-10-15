@@ -115,13 +115,8 @@ async fn sample_tags_from_source(
     let mut tags = HashSet::new();
 
     for item in items_result.items.into_iter().flatten() {
-        if item.file_type == "Community" && !item.tags.is_empty() {
-            for tag in item.tags.split(", ") {
-                let tag = tag.trim();
-                if !tag.is_empty() {
-                    tags.insert(tag.to_string());
-                }
-            }
+        if item.file_type == "Community" {
+            tags.extend(item.tags.into_iter().filter(|tag| !tag.trim().is_empty()));
         }
     }
 
