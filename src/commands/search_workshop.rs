@@ -8,7 +8,9 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use steamworks::{AppIDs, AppId, UGCQueryType, UGCType};
 use tokio::sync::mpsc;
 
-use crate::commands::workshop_items::{EnhancedWorkshopItem, with_creator_names};
+use crate::commands::workshop_items::{
+    EnhancedWorkshopItem, attach_local_state, with_creator_names,
+};
 use crate::core::steam_manager;
 use crate::core::workshop_item::workshop::{WorkshopItem, WorkshopItemsResult};
 use crate::utils::get_cache_dir::{cache_file, write_cache_file};
@@ -126,7 +128,8 @@ pub async fn search_workshop(
     };
 
     let mut cache = SearchCache::load_from_disk();
-    if let Some(cached_result) = cache.get(&cache_key) {
+    if let Some(mut cached_result) = cache.get(&cache_key) {
+        attach_local_state(steam_game_id, &mut cached_result).await?;
         return Ok(cached_result);
     }
 
@@ -242,9 +245,9 @@ pub async fn search_workshop(
         return Ok(Vec::new());
     }
 
-    let result = with_creator_names(steam_game_id, workshop_items).await?;
-
+    let mut result = with_creator_names(steam_game_id, workshop_items).await?;
     cache.insert(cache_key, result.clone());
 
+    attach_local_state(steam_game_id, &mut result).await?;
     Ok(result)
 }

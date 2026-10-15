@@ -48,6 +48,34 @@ fn workshop_items_keeps_input_order() {
 }
 
 #[test]
+fn subscribed_items_report_local_install_state() {
+    require_steam();
+    let _lock = lock_item_download();
+    let value = s7forge(&["subscribed-items", "--app-id", APP_ID]).json();
+    let item = as_array(&value)
+        .iter()
+        .find(|item| item["published_file_id"].as_u64() == ITEM_ID.parse().ok())
+        .expect("fixture item must be subscribed");
+
+    assert_eq!(item["state"]["subscribed"], true);
+    assert_eq!(item["state"]["installed"], true);
+    assert_eq!(item["state"]["downloading"], false);
+
+    let folder = item["install"]["folder"].as_str().unwrap();
+    assert!(folder.ends_with(ITEM_ID), "unexpected folder: {folder}");
+    assert!(std::path::Path::new(folder).is_dir());
+    assert!(item["install"]["size_on_disk"].as_u64().unwrap() > 0);
+    // The installed copy is never newer than the published one.
+    assert!(item["install"]["time_updated"].as_u64() <= item["time_updated"].as_u64());
+}
+
+#[test]
+fn search_results_include_local_state() {
+    // assert_workshop_item checks `state` and `install` on every result.
+    search(&["--sort-by", "recent"]);
+}
+
+#[test]
 fn subscribed_items_contains_fixture_item() {
     require_steam();
     let value = s7forge(&["subscribed-items", "--app-id", APP_ID]).json();

@@ -163,6 +163,24 @@ pub fn assert_workshop_item(item: &Value) {
     assert_eq!(field("file_type").as_str().unwrap(), "Community");
     assert!(!field("creator_id").as_str().unwrap().is_empty());
     assert!(!field("creator_name").as_str().unwrap().is_empty());
+
+    let state = field("state");
+    for flag in [
+        "subscribed",
+        "installed",
+        "needs_update",
+        "downloading",
+        "download_pending",
+    ] {
+        assert!(state[flag].is_boolean(), "state.{flag} missing: {item}");
+    }
+
+    let install = field("install");
+    if !install.is_null() {
+        assert!(!install["folder"].as_str().unwrap().is_empty());
+        assert!(install["size_on_disk"].is_u64());
+        assert_unix_seconds(&install["time_updated"]);
+    }
 }
 
 /// Timestamps are Unix seconds, like SQLite's `unixepoch()`.

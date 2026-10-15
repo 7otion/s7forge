@@ -21,7 +21,7 @@ pub fn get_cache_dir() -> PathBuf {
 
 /// Bump whenever a cached struct changes shape. bincode files written with an
 /// older layout are then ignored instead of being decoded into wrong values.
-const CACHE_FORMAT_VERSION: u32 = 3;
+const CACHE_FORMAT_VERSION: u32 = 4;
 
 pub fn cache_file(name: &str) -> PathBuf {
     get_cache_dir().join(format!("v{}_{}", CACHE_FORMAT_VERSION, name))

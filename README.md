@@ -121,6 +121,8 @@ s7forge clear-cache
     "creator_steam_game_id": "number | null",
     "creator_id": "string",
     "creator_name": "string",
+    "install": "object | null (null when not downloaded on this PC)",
+    "state": "object (local Steam client flags, see below)",
     "consumer_steam_game_id": "number | null",
     "title": "string",
     "description": "string",
@@ -163,6 +165,31 @@ s7forge clear-cache
 ]
 ```
 
+### Local install state
+
+Every item from `workshop-items`, `subscribed-items`, `collection-items` and
+`search-workshop` carries what the local Steam client knows about it. This is
+read fresh on every run and never cached.
+
+```json
+"install": {
+  "folder": "F:\\SteamLibrary\\steamapps\\workshop\\content\\1142710\\2858004741",
+  "size_on_disk": 13386,
+  "time_updated": 1742939179
+},
+"state": {
+  "subscribed": true,
+  "installed": true,
+  "needs_update": false,
+  "downloading": false,
+  "download_pending": false
+}
+```
+
+`install.time_updated` is the `time_updated` of the version installed on this
+PC. If it is lower than the item's own `time_updated`, a newer version is
+published but not installed yet.
+
 ### Caching
 
 - Cache files live in `%LOCALAPPDATA%\s7forge\cache\`. Set the `S7FORGE_CACHE_DIR` environment variable to use another directory.
@@ -171,6 +198,7 @@ s7forge clear-cache
   - workshop item details: 30 minutes (so `time_updated` shows new mod versions soon)
   - creator names: 7 days (looking up an unknown name can take up to 2 seconds)
   - search results: 10 minutes
+- Local install state (`install`, `state`) is never cached.
 - Use `s7forge clear-cache` to clear all cached data
 
 ## License

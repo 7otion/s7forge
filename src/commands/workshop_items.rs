@@ -2,7 +2,7 @@ use bincode::{Decode, Encode};
 use futures_util::FutureExt;
 use rustc_hash::FxHashMap;
 use serde::Serialize;
-use steamworks::{PublishedFileId, SteamId};
+use steamworks::{ItemState, PublishedFileId, SteamId};
 
 use crate::core::steam_manager;
 use crate::core::workshop_item::workshop::{WorkshopItem, WorkshopItemsResult};
@@ -23,6 +23,41 @@ pub struct EnhancedWorkshopItem {
     pub workshop_item: WorkshopItem,
     pub creator_id: String,
     pub creator_name: String,
+    /// Where the item is on this PC; `None` when it is not downloaded.
+    pub install: Option<InstallInfo>,
+    pub state: LocalState,
+}
+
+/// What the local Steam client knows about an installed item.
+#[derive(Debug, Clone, Serialize, Encode, Decode)]
+pub struct InstallInfo {
+    pub folder: String,
+    pub size_on_disk: u64,
+    /// `time_updated` of the version installed on this PC (Unix seconds).
+    /// Lower than the item's `time_updated` means a newer version is published.
+    pub time_updated: u64,
+}
+
+/// The local Steam client's item state flags.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Encode, Decode)]
+pub struct LocalState {
+    pub subscribed: bool,
+    pub installed: bool,
+    pub needs_update: bool,
+    pub downloading: bool,
+    pub download_pending: bool,
+}
+
+impl From<ItemState> for LocalState {
+    fn from(state: ItemState) -> Self {
+        Self {
+            subscribed: state.contains(ItemState::SUBSCRIBED),
+            installed: state.contains(ItemState::INSTALLED),
+            needs_update: state.contains(ItemState::NEEDS_UPDATE),
+            downloading: state.contains(ItemState::DOWNLOADING),
+            download_pending: state.contains(ItemState::DOWNLOAD_PENDING),
+        }
+    }
 }
 
 impl EnhancedWorkshopItem {
@@ -31,8 +66,33 @@ impl EnhancedWorkshopItem {
             workshop_item,
             creator_id,
             creator_name,
+            install: None,
+            state: LocalState::default(),
         }
     }
+}
+
+/// Fills `install` and `state` from the local Steam client. This changes from
+/// moment to moment, so it is read on every run and never cached.
+pub async fn attach_local_state(
+    steam_game_id: u32,
+    items: &mut [EnhancedWorkshopItem],
+) -> Result<(), String> {
+    if items.is_empty() {
+        return Ok(());
+    }
+    let steam_client = steam_manager::initialize_client(steam_game_id).await?;
+    let ugc = steam_client.ugc();
+    for item in items {
+        let id = PublishedFileId(item.workshop_item.published_file_id);
+        item.state = ugc.item_state(id).into();
+        item.install = ugc.item_install_info(id).map(|info| InstallInfo {
+            folder: info.folder,
+            size_on_disk: info.size_on_disk,
+            time_updated: info.timestamp as u64,
+        });
+    }
+    Ok(())
 }
 
 pub async fn workshop_items(
@@ -73,7 +133,9 @@ pub async fn workshop_items(
         .filter_map(|id| cache.get(id, now, ITEM_TTL_SECS).cloned().flatten())
         .collect();
 
-    with_creator_names(steam_game_id, items).await
+    let mut items = with_creator_names(steam_game_id, items).await?;
+    attach_local_state(steam_game_id, &mut items).await?;
+    Ok(items)
 }
 
 /// Fetches item details from Steam, keeping only Community items.
