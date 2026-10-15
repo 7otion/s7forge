@@ -28,9 +28,5 @@ lexopt = "0.3"
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55.0"
 
-[[bin]]
-name = "s7forge"
-test = false
-
 [build-dependencies]
 winres = "0.1"

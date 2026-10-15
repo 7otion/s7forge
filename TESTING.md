@@ -16,6 +16,8 @@ cargo test
 
 This runs:
 
+- Unit tests inside `src/` (`#[cfg(test)]` modules): pure logic, such as how Steam item states map to output. They don't need Steam running.
+- `tests/cache.rs`: cache location and cache failure handling.
 - `tests/offline.rs`: commands that never touch the Steam API (CLI parsing, cache, local paths).
 - `tests/steam.rs`: commands that talk to the Steam API. Each test fails immediately if `steam.exe` is not running.
 

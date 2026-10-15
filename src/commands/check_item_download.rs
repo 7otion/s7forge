@@ -1,11 +1,9 @@
-use futures_util::FutureExt;
 use serde::Serialize;
-use steamworks::PublishedFileId;
-use tokio::sync::mpsc;
+use steamworks::{ItemState, PublishedFileId};
 
 use crate::core::steam_manager;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct DownloadInfo {
     pub is_downloading: bool,
     pub downloaded_bytes: u64,
@@ -16,84 +14,118 @@ pub struct DownloadInfo {
 
 pub async fn check_item_download(steam_game_id: u32, item_id: u64) -> Result<DownloadInfo, String> {
     let steam_client = steam_manager::initialize_client(steam_game_id).await?;
+    let ugc = steam_client.ugc();
+    let item = PublishedFileId(item_id);
 
-    let (tx, mut rx) = mpsc::channel(32);
+    // These are synchronous reads of the local Steam client state; no callbacks are involved.
+    Ok(download_info(
+        ugc.item_state(item),
+        ugc.item_install_info(item).map(|info| info.size_on_disk),
+        ugc.item_download_info(item),
+    ))
+}
 
-    let download_task = tokio::task::spawn_blocking(move || {
-        let ugc = steam_client.ugc();
-        let item = PublishedFileId(item_id);
+fn download_info(
+    state: ItemState,
+    installed_size: Option<u64>,
+    download_progress: Option<(u64, u64)>,
+) -> DownloadInfo {
+    let is_installed = state.contains(ItemState::INSTALLED);
+    let needs_update = state.contains(ItemState::NEEDS_UPDATE);
+    let is_downloading = state.intersects(ItemState::DOWNLOADING | ItemState::DOWNLOAD_PENDING);
 
-        let (tx_inner, rx_inner) = std::sync::mpsc::channel();
-
-        let start_time = std::time::Instant::now();
-        let timeout_duration = std::time::Duration::from_secs(30);
-
-        let state = ugc.item_state(item);
-        let is_installed = state.contains(steamworks::ItemState::INSTALLED);
-        let is_downloading = state.contains(steamworks::ItemState::DOWNLOADING);
-        let needs_update = state.contains(steamworks::ItemState::NEEDS_UPDATE);
-
-        if is_installed && !needs_update {
-            let _ = tx_inner.send(Ok(DownloadInfo {
-                is_downloading: false,
-                downloaded_bytes: ugc.item_install_info(item).unwrap().size_on_disk,
-                total_bytes: ugc.item_install_info(item).unwrap().size_on_disk,
-                progress_percentage: 100.0,
-                download_complete: true,
-            }));
-        } else if is_downloading {
-            if let Some((bytes_downloaded, bytes_total)) = ugc.item_download_info(item) {
-                let progress = if bytes_total > 0 {
-                    (bytes_downloaded as f32 / bytes_total as f32) * 100.0
-                } else {
-                    0.0
-                };
-
-                let _ = tx_inner.send(Ok(DownloadInfo {
-                    is_downloading: true,
-                    downloaded_bytes: bytes_downloaded,
-                    total_bytes: bytes_total,
-                    progress_percentage: progress,
-                    download_complete: false,
-                }));
-            }
+    if is_downloading {
+        let (downloaded_bytes, total_bytes) = download_progress.unwrap_or((0, 0));
+        let progress_percentage = if total_bytes > 0 {
+            (downloaded_bytes as f32 / total_bytes as f32) * 100.0
         } else {
-            let _ = tx_inner.send(Ok(DownloadInfo {
-                is_downloading: false,
-                downloaded_bytes: 0,
-                total_bytes: 0,
-                progress_percentage: 0.0,
-                download_complete: false,
-            }));
+            0.0
+        };
+        DownloadInfo {
+            is_downloading: true,
+            downloaded_bytes,
+            total_bytes,
+            progress_percentage,
+            download_complete: false,
         }
-
-        loop {
-            let _ = tx.blocking_send(());
-            if let Ok(result) = rx_inner.try_recv() {
-                return result;
-            }
-
-            if start_time.elapsed() > timeout_duration {
-                return Err("Operation timed out waiting for Steam response".to_string());
-            }
-
-            std::thread::sleep(std::time::Duration::from_millis(10));
+    } else if is_installed && !needs_update {
+        // Install info can be missing even when the state says INSTALLED (e.g. a deleted folder).
+        let size = installed_size.unwrap_or(0);
+        DownloadInfo {
+            is_downloading: false,
+            downloaded_bytes: size,
+            total_bytes: size,
+            progress_percentage: 100.0,
+            download_complete: true,
         }
-    });
-
-    let mut download_result = None;
-    let mut fused_task = download_task.fuse();
-
-    while download_result.is_none() {
-        tokio::select! {
-            Some(_) = rx.recv() => {
-                steam_manager::run_callbacks(steam_game_id)?;
-            }
-            task_result = &mut fused_task => {
-                download_result = Some(task_result.map_err(|e| format!("Task error: {:?}", e))??);
-            }
+    } else {
+        DownloadInfo {
+            is_downloading: false,
+            downloaded_bytes: 0,
+            total_bytes: 0,
+            progress_percentage: 0.0,
+            download_complete: false,
         }
     }
+}
 
-    Ok(download_result.unwrap())
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SUBSCRIBED: ItemState = ItemState::SUBSCRIBED;
+
+    #[test]
+    fn installed_item_reports_size_on_disk() {
+        let info = download_info(SUBSCRIBED | ItemState::INSTALLED, Some(42), None);
+        assert!(info.download_complete);
+        assert_eq!(info.total_bytes, 42);
+        assert_eq!(info.progress_percentage, 100.0);
+    }
+
+    #[test]
+    fn installed_item_without_install_info_does_not_panic() {
+        // Steam reports INSTALLED but GetItemInstallInfo fails, e.g. the folder was deleted.
+        let info = download_info(SUBSCRIBED | ItemState::INSTALLED, None, None);
+        assert!(info.download_complete);
+        assert_eq!(info.total_bytes, 0);
+    }
+
+    #[test]
+    fn downloading_item_reports_progress() {
+        let info = download_info(SUBSCRIBED | ItemState::DOWNLOADING, None, Some((25, 100)));
+        assert!(info.is_downloading);
+        assert_eq!(info.progress_percentage, 25.0);
+    }
+
+    #[test]
+    fn downloading_item_without_progress_info_still_reports_downloading() {
+        let info = download_info(SUBSCRIBED | ItemState::DOWNLOADING, None, None);
+        assert!(info.is_downloading);
+        assert!(!info.download_complete);
+    }
+
+    #[test]
+    fn download_pending_counts_as_downloading() {
+        let info = download_info(SUBSCRIBED | ItemState::DOWNLOAD_PENDING, None, None);
+        assert!(info.is_downloading);
+        assert!(!info.download_complete);
+    }
+
+    #[test]
+    fn update_downloading_reports_progress_not_completion() {
+        let state =
+            SUBSCRIBED | ItemState::INSTALLED | ItemState::NEEDS_UPDATE | ItemState::DOWNLOADING;
+        let info = download_info(state, Some(42), Some((10, 20)));
+        assert!(info.is_downloading);
+        assert!(!info.download_complete);
+        assert_eq!(info.progress_percentage, 50.0);
+    }
+
+    #[test]
+    fn not_subscribed_item_is_not_complete() {
+        let info = download_info(ItemState::NONE, None, None);
+        assert!(!info.is_downloading);
+        assert!(!info.download_complete);
+    }
 }
