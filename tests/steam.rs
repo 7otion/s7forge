@@ -169,22 +169,6 @@ fn search_workshop_with_tag_only_returns_tagged_items() {
 }
 
 #[test]
-fn search_workshop_period_requires_popular_sort() {
-    require_steam();
-    let stderr = s7forge(&[
-        "search-workshop",
-        "--app-id",
-        APP_ID,
-        "--sort-by",
-        "recent",
-        "--period",
-        "one-week",
-    ])
-    .error();
-    assert!(stderr.contains("only applicable for popular"));
-}
-
-#[test]
 fn discover_tags_returns_sorted_unique_tags() {
     require_steam();
     let value = s7forge(&["discover-tags", "--app-id", APP_ID]).json();

@@ -109,3 +109,65 @@ fn search_workshop_page_zero_fails() {
     let stderr = s7forge(&["search-workshop", "--app-id", APP_ID, "--page", "0"]).error();
     assert!(stderr.contains("Page number must be at least 1"));
 }
+
+#[test]
+fn search_workshop_rejects_unknown_sort() {
+    let stderr = s7forge(&["search-workshop", "--app-id", APP_ID, "--sort-by", "bogus"]).error();
+    assert!(
+        stderr.contains("Invalid --sort-by"),
+        "unexpected error: {stderr}"
+    );
+}
+
+#[test]
+fn search_workshop_rejects_unknown_period() {
+    let stderr = s7forge(&[
+        "search-workshop",
+        "--app-id",
+        APP_ID,
+        "--sort-by",
+        "popular",
+        "--period",
+        "bogus",
+    ])
+    .error();
+    assert!(
+        stderr.contains("Invalid --period"),
+        "unexpected error: {stderr}"
+    );
+}
+
+#[test]
+fn search_workshop_period_requires_popular_sort() {
+    let stderr = s7forge(&[
+        "search-workshop",
+        "--app-id",
+        APP_ID,
+        "--sort-by",
+        "recent",
+        "--period",
+        "one-week",
+    ])
+    .error();
+    assert!(
+        stderr.contains("only applicable"),
+        "unexpected error: {stderr}"
+    );
+}
+
+#[test]
+fn combined_search_workshop_rejects_unknown_sort() {
+    let stderr = s7forge(&[
+        "--app-id",
+        APP_ID,
+        "combined",
+        "--search-workshop",
+        "--sort-by",
+        "bogus",
+    ])
+    .error();
+    assert!(
+        stderr.contains("Invalid --sort-by"),
+        "unexpected error: {stderr}"
+    );
+}

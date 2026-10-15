@@ -76,7 +76,7 @@ s7forge discover-tags --app-id 548430
 
 **Sort Options:**
 - `relevance` - Text search relevance (requires query text)
-- `popular` - Most voted items (supports time periods)
+- `popular` - Trending items within `--period` (default `one-week`); the only sort that accepts `--period`
 - `recent` - Recently published items
 - `most-subscribed` - Most subscribed items
 - `recently-updated` - Recently updated items

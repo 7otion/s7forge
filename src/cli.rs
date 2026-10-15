@@ -85,6 +85,44 @@ pub fn parse_args() -> Result<Command, lexopt::Error> {
     }
 }
 
+const SORT_OPTIONS: &[&str] = &[
+    "relevance",
+    "recent",
+    "popular",
+    "most-subscribed",
+    "recently-updated",
+];
+const PERIOD_OPTIONS: &[&str] = &[
+    "today",
+    "one-week",
+    "three-months",
+    "six-months",
+    "one-year",
+];
+
+fn validate_search_options(sort_by: &str, period: Option<&str>) -> Result<(), String> {
+    if !SORT_OPTIONS.contains(&sort_by) {
+        return Err(format!(
+            "Invalid --sort-by '{}'. Expected one of: {}",
+            sort_by,
+            SORT_OPTIONS.join(", ")
+        ));
+    }
+    if let Some(period) = period {
+        if !PERIOD_OPTIONS.contains(&period) {
+            return Err(format!(
+                "Invalid --period '{}'. Expected one of: {}",
+                period,
+                PERIOD_OPTIONS.join(", ")
+            ));
+        }
+        if sort_by != "popular" {
+            return Err("Period filter is only applicable for popular sort type".to_string());
+        }
+    }
+    Ok(())
+}
+
 struct CommandBuilder {
     app_id: Option<u32>,
     item_id: Option<u64>,
@@ -183,6 +221,7 @@ fn parse_command(
                 Ok(true)
             },
             |b| {
+                validate_search_options(&b.sort_by, b.period.as_deref())?;
                 Ok(Command::SearchWorkshop {
                     app_id: b.app_id.ok_or("Missing --app-id")?,
                     query: b.query,
@@ -498,6 +537,7 @@ fn parse_combined_subcommand(
                     })],
                 )?;
             }
+            validate_search_options(&builder.sort_by, builder.period.as_deref())?;
             Ok(Command::SearchWorkshop {
                 app_id,
                 query: builder.query,

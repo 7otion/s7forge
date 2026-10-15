@@ -148,7 +148,7 @@ pub async fn search_workshop(
             "popular" => UGCQueryType::RankedByTrend,
             "most-subscribed" => UGCQueryType::RankedByTotalUniqueSubscriptions,
             "recently-updated" => UGCQueryType::RankedByLastUpdatedDate,
-            _ => UGCQueryType::RankedByTextSearch,
+            other => return Err(format!("Invalid sort option: {}", other)),
         };
 
         let query_handle = ugc
@@ -172,7 +172,7 @@ pub async fn search_workshop(
                 "three-months" => 90,
                 "six-months" => 180,
                 "one-year" => 365,
-                _ => 7,
+                other => return Err(format!("Invalid period option: {}", other)),
             };
             configured_query = configured_query.set_ranked_by_trend_days(trend_days);
         } else if period.is_some() {
