@@ -258,7 +258,6 @@ pub mod workshop {
         pub owner: PlayerSteamId,
         pub time_created: u64,
         pub time_updated: u64,
-        pub time_added_to_user_list: u32,
         pub visibility: UgcItemVisibility,
         pub banned: bool,
         pub accepted_for_use: bool,
@@ -278,9 +277,6 @@ pub mod workshop {
     impl WorkshopItem {
         fn from_query_results(results: &steamworks::QueryResults, index: u32) -> Option<Self> {
             results.get(index).map(|item| {
-                let time_created = (item.time_created as u64).saturating_mul(1000);
-                let time_updated = (item.time_updated as u64).saturating_mul(1000);
-
                 let required_items = results
                     .get_children(index)
                     .unwrap_or_default()
@@ -316,9 +312,8 @@ pub mod workshop {
                     title: item.title,
                     description: item.description,
                     owner: PlayerSteamId::from_steamid(item.owner),
-                    time_created,
-                    time_updated,
-                    time_added_to_user_list: item.time_added_to_user_list,
+                    time_created: item.time_created as u64,
+                    time_updated: item.time_updated as u64,
                     visibility: item.visibility.into(),
                     banned: item.banned,
                     accepted_for_use: item.accepted_for_use,

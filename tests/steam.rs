@@ -78,7 +78,8 @@ fn collection_items_returns_details_and_children() {
     let details = &value["details"];
     assert_eq!(details["id"].to_string(), COLLECTION_ID);
     assert!(!details["title"].as_str().unwrap().is_empty());
-    assert!(details["time_created"].as_u64().unwrap() > 0);
+    assert_unix_seconds(&details["time_created"]);
+    assert_unix_seconds(&details["time_updated"]);
 
     let items = as_array(&value["items"]);
     assert!(!items.is_empty());

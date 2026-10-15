@@ -143,8 +143,12 @@ pub fn assert_workshop_item(item: &Value) {
     assert!(!field("title").as_str().unwrap().is_empty());
     assert!(field("description").is_string());
     assert!(field("owner").is_object());
-    assert!(field("time_created").as_u64().unwrap() > 0);
-    assert!(field("time_updated").as_u64().unwrap() > 0);
+    assert_unix_seconds(field("time_created"));
+    assert_unix_seconds(field("time_updated"));
+    assert!(
+        item.get("time_added_to_user_list").is_none(),
+        "time_added_to_user_list is always 0 for these queries and must not be returned"
+    );
     assert!(
         field("tags")
             .as_array()
@@ -159,4 +163,16 @@ pub fn assert_workshop_item(item: &Value) {
     assert_eq!(field("file_type").as_str().unwrap(), "Community");
     assert!(!field("creator_id").as_str().unwrap().is_empty());
     assert!(!field("creator_name").as_str().unwrap().is_empty());
+}
+
+/// Timestamps are Unix seconds, like SQLite's `unixepoch()`.
+/// Anything above 10^11 would be milliseconds (year 5138 in seconds).
+pub fn assert_unix_seconds(value: &Value) {
+    let secs = value
+        .as_u64()
+        .unwrap_or_else(|| panic!("expected a timestamp, got {value}"));
+    assert!(
+        secs > 1_000_000_000 && secs < 100_000_000_000,
+        "expected Unix seconds, got {secs}"
+    );
 }

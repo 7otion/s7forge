@@ -129,9 +129,8 @@ s7forge clear-cache
       "steam_id32": "string",
       "account_id": "number"
     },
-    "time_created": "number",
-    "time_updated": "number",
-    "time_added_to_user_list": "number",
+    "time_created": "number (Unix seconds)",
+    "time_updated": "number (Unix seconds)",
     "visibility": "string",
     "banned": "boolean",
     "accepted_for_use": "boolean",
