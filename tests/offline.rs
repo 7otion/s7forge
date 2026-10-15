@@ -171,3 +171,43 @@ fn combined_search_workshop_rejects_unknown_sort() {
         "unexpected error: {stderr}"
     );
 }
+
+/// Removes a directory this test created inside a Steam library.
+struct CreatedDir(std::path::PathBuf);
+
+impl Drop for CreatedDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir(&self.0);
+    }
+}
+
+/// A game's workshop folder appears when its first mod is downloaded; a
+/// "not found" answer from before that must not be cached.
+#[test]
+fn workshop_path_notices_a_folder_created_after_a_miss() {
+    // An app id no real game uses, so the folder is certainly ours.
+    const FAKE_APP_ID: &str = "4000000001";
+    let cache = TempDir::new("workshop-miss");
+
+    let libraries = s7forge(&["steam-library-paths"]).json();
+    let library = as_array(&libraries)[0].as_str().unwrap().to_string();
+    let folder = Path::new(&library)
+        .join("steamapps")
+        .join("workshop")
+        .join("content")
+        .join(FAKE_APP_ID);
+    assert!(
+        !folder.exists(),
+        "leftover test folder: {}",
+        folder.display()
+    );
+
+    let args = ["workshop-path", "--app-id", FAKE_APP_ID];
+    s7forge_with_cache(cache.path(), &args).error();
+
+    std::fs::create_dir(&folder).unwrap();
+    let _cleanup = CreatedDir(folder.clone());
+
+    let value = s7forge_with_cache(cache.path(), &args).json();
+    assert_eq!(Path::new(value.as_str().unwrap()), folder);
+}
