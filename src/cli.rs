@@ -386,7 +386,7 @@ fn parse_command(
             Ok(Command::SteamLibraryPaths)
         }
         "help" | "--help" | "-h" => {
-            help::print_main_help();
+            help::print_general_help();
             std::process::exit(0);
         }
         _ => Err(format!("Unknown command: {}", command).into()),
@@ -617,15 +617,20 @@ fn parse_combined_subcommand(
     }
 }
 
+/// A flag whose value is stored as-is.
+type StringArg<'a> = (&'a str, fn(&mut CommandBuilder, String));
+/// A flag whose value must be parsed first.
+type ParsedArg<'a> = (
+    &'a str,
+    fn(&mut CommandBuilder, String) -> Result<(), &'static str>,
+);
+
 fn parse_arg_from_os<I>(
     builder: &mut CommandBuilder,
     arg: &std::ffi::OsString,
     iter: &mut I,
-    string_args: &[(&str, fn(&mut CommandBuilder, String))],
-    parse_args: &[(
-        &str,
-        fn(&mut CommandBuilder, String) -> Result<(), &'static str>,
-    )],
+    string_args: &[StringArg],
+    parse_args: &[ParsedArg],
 ) -> Result<(), lexopt::Error>
 where
     I: Iterator<Item = std::ffi::OsString>,

@@ -25,21 +25,21 @@ impl SteamState {
 
     pub fn get_client(&self, steam_game_id: u32) -> Option<Client> {
         let state = self.client.lock().unwrap();
-        if let Some((current_steam_game_id, ref client)) = *state {
-            if current_steam_game_id == steam_game_id {
-                return Some(client.clone());
-            }
+        if let Some((current_steam_game_id, ref client)) = *state
+            && current_steam_game_id == steam_game_id
+        {
+            return Some(client.clone());
         }
         None
     }
 
     pub fn run_callbacks(&self, steam_game_id: u32) -> Result<(), String> {
         let mut state = self.single_client.lock().unwrap();
-        if let Some((current_steam_game_id, ref mut single_client)) = *state {
-            if current_steam_game_id == steam_game_id {
-                single_client.run_callbacks();
-                return Ok(());
-            }
+        if let Some((current_steam_game_id, ref mut single_client)) = *state
+            && current_steam_game_id == steam_game_id
+        {
+            single_client.run_callbacks();
+            return Ok(());
         }
         Err("Single client not found for given steam_game_id".to_string())
     }

@@ -1,25 +1,3 @@
-pub fn print_main_help() {
-    println!("s7forge - Steam utility\n");
-    println!("USAGE:");
-    println!("    s7forge <COMMAND>\n");
-    println!("COMMANDS:");
-    println!("    check-item-download     Check download status of a workshop item");
-    println!("    collection-items        Get items from a workshop collection");
-    println!("    workshop-items          Get detailed information about workshop items");
-    println!("    subscribe               Subscribe to workshop items");
-    println!("    unsubscribe             Unsubscribe from workshop items");
-    println!("    download-workshop-item  Download a workshop item you own");
-    println!("    subscribed-items        List all items you're subscribed to for a game");
-    println!("    search-workshop         Search workshop content by text query");
-    println!("    workshop-path           Get the local workshop path for a game");
-    println!("    app-installation-path   Get the installation path for a Steam app");
-    println!("    steam-library-paths     List all Steam library folder paths");
-    println!("    clear-cache             Clear all cached data");
-    println!("    discover-tags           Discover all available workshop tags for a game");
-    println!("    help                    Print this message\n");
-    println!("For more information on a specific command, use: s7forge <COMMAND> --help");
-}
-
 pub fn print_check_item_help() {
     println!("Check download status of a workshop item\n");
     println!("USAGE:");
@@ -129,7 +107,7 @@ pub fn print_unsubscribe_help() {
 }
 
 pub fn print_download_workshop_item_help() {
-    println!("Download a workshop item you own\n");
+    println!("Force Steam to (re)download a subscribed workshop item and wait for the result\n");
     println!("USAGE:");
     println!("    s7forge download-workshop-item --app-id <APP_ID> --item-id <ITEM_ID>\n");
     println!("OPTIONS:");
@@ -198,7 +176,7 @@ pub fn print_combined_help() {
     println!();
     println!("    # Advanced: mix commands with different options");
     println!(
-        "    s7forge --app-id 548430 combined --workshop-path --search-workshop --query \\\"tank\\\" --page 1"
+        "    s7forge --app-id 548430 combined --workshop-path --search-workshop --query \"tank\" --page 1"
     );
     println!();
     println!("    # Multiple parameterized commands");
@@ -223,14 +201,18 @@ pub fn print_general_help() {
     println!("    check-item-download      Check if a workshop item is downloaded");
     println!("    subscribe                Subscribe to workshop items");
     println!("    unsubscribe              Unsubscribe from workshop items");
-    println!("    download-workshop-item   Download a workshop item you own");
-    println!("    clear-cache              Clear the Steam workshop cache");
+    println!("    download-workshop-item   Force (re)download of a subscribed workshop item");
+    println!("    clear-cache              Clear all cached data");
     println!("    workshop-path            Get the local workshop path for a game");
     println!("    steam-library-paths      List all Steam library paths");
     println!("    app-installation-path    Get the installation path for a Steam app\n");
     println!("OPTIONS:");
     println!("    -h, --help               Print help");
     println!("    -v, --version            Print version\n");
+    println!("ENVIRONMENT:");
+    println!(
+        "    S7FORGE_CACHE_DIR        Cache directory (default: %LOCALAPPDATA%\\s7forge\\cache)\n"
+    );
     println!("Use 's7forge <COMMAND> --help' for more information on a specific command.");
 }
 

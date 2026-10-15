@@ -30,175 +30,6 @@ pub mod workshop {
     use crate::core::localplayer::PlayerSteamId;
     use crate::core::workshop::UgcItemVisibility;
 
-    pub enum UGCQueryType {
-        RankedByVote,
-        RankedByPublicationDate,
-        AcceptedForGameRankedByAcceptanceDate,
-        RankedByTrend,
-        FavoritedByFriendsRankedByPublicationDate,
-        CreatedByFriendsRankedByPublicationDate,
-        RankedByNumTimesReported,
-        CreatedByFollowedUsersRankedByPublicationDate,
-        NotYetRated,
-        RankedByTotalVotesAsc,
-        RankedByVotesUp,
-        RankedByTextSearch,
-        RankedByTotalUniqueSubscriptions,
-        RankedByPlaytimeTrend,
-        RankedByTotalPlaytime,
-        RankedByAveragePlaytimeTrend,
-        RankedByLifetimeAveragePlaytime,
-        RankedByPlaytimeSessionsTrend,
-        RankedByLifetimePlaytimeSessions,
-        RankedByLastUpdatedDate,
-    }
-
-    impl From<UGCQueryType> for steamworks::UGCQueryType {
-        fn from(val: UGCQueryType) -> Self {
-            match val {
-                UGCQueryType::RankedByVote => steamworks::UGCQueryType::RankedByVote,
-                UGCQueryType::RankedByPublicationDate => {
-                    steamworks::UGCQueryType::RankedByPublicationDate
-                }
-                UGCQueryType::AcceptedForGameRankedByAcceptanceDate => {
-                    steamworks::UGCQueryType::AcceptedForGameRankedByAcceptanceDate
-                }
-                UGCQueryType::RankedByTrend => steamworks::UGCQueryType::RankedByTrend,
-                UGCQueryType::FavoritedByFriendsRankedByPublicationDate => {
-                    steamworks::UGCQueryType::FavoritedByFriendsRankedByPublicationDate
-                }
-                UGCQueryType::CreatedByFriendsRankedByPublicationDate => {
-                    steamworks::UGCQueryType::CreatedByFriendsRankedByPublicationDate
-                }
-                UGCQueryType::RankedByNumTimesReported => {
-                    steamworks::UGCQueryType::RankedByNumTimesReported
-                }
-                UGCQueryType::CreatedByFollowedUsersRankedByPublicationDate => {
-                    steamworks::UGCQueryType::CreatedByFollowedUsersRankedByPublicationDate
-                }
-                UGCQueryType::NotYetRated => steamworks::UGCQueryType::NotYetRated,
-                UGCQueryType::RankedByTotalVotesAsc => {
-                    steamworks::UGCQueryType::RankedByTotalVotesAsc
-                }
-                UGCQueryType::RankedByVotesUp => steamworks::UGCQueryType::RankedByVotesUp,
-                UGCQueryType::RankedByTextSearch => steamworks::UGCQueryType::RankedByTextSearch,
-                UGCQueryType::RankedByTotalUniqueSubscriptions => {
-                    steamworks::UGCQueryType::RankedByTotalUniqueSubscriptions
-                }
-                UGCQueryType::RankedByPlaytimeTrend => {
-                    steamworks::UGCQueryType::RankedByPlaytimeTrend
-                }
-                UGCQueryType::RankedByTotalPlaytime => {
-                    steamworks::UGCQueryType::RankedByTotalPlaytime
-                }
-                UGCQueryType::RankedByAveragePlaytimeTrend => {
-                    steamworks::UGCQueryType::RankedByAveragePlaytimeTrend
-                }
-                UGCQueryType::RankedByLifetimeAveragePlaytime => {
-                    steamworks::UGCQueryType::RankedByLifetimeAveragePlaytime
-                }
-                UGCQueryType::RankedByPlaytimeSessionsTrend => {
-                    steamworks::UGCQueryType::RankedByPlaytimeSessionsTrend
-                }
-                UGCQueryType::RankedByLifetimePlaytimeSessions => {
-                    steamworks::UGCQueryType::RankedByLifetimePlaytimeSessions
-                }
-                UGCQueryType::RankedByLastUpdatedDate => {
-                    steamworks::UGCQueryType::RankedByLastUpdatedDate
-                }
-            }
-        }
-    }
-
-    pub enum UGCType {
-        Items,
-        ItemsMtx,
-        ItemsReadyToUse,
-        Collections,
-        Artwork,
-        Videos,
-        Screenshots,
-        AllGuides,
-        WebGuides,
-        IntegratedGuides,
-        UsableInGame,
-        ControllerBindings,
-        GameManagedItems,
-        All,
-    }
-
-    impl From<UGCType> for steamworks::UGCType {
-        fn from(val: UGCType) -> Self {
-            match val {
-                UGCType::Items => steamworks::UGCType::Items,
-                UGCType::ItemsMtx => steamworks::UGCType::ItemsMtx,
-                UGCType::ItemsReadyToUse => steamworks::UGCType::ItemsReadyToUse,
-                UGCType::Collections => steamworks::UGCType::Collections,
-                UGCType::Artwork => steamworks::UGCType::Artwork,
-                UGCType::Videos => steamworks::UGCType::Videos,
-                UGCType::Screenshots => steamworks::UGCType::Screenshots,
-                UGCType::AllGuides => steamworks::UGCType::AllGuides,
-                UGCType::WebGuides => steamworks::UGCType::WebGuides,
-                UGCType::IntegratedGuides => steamworks::UGCType::IntegratedGuides,
-                UGCType::UsableInGame => steamworks::UGCType::UsableInGame,
-                UGCType::ControllerBindings => steamworks::UGCType::ControllerBindings,
-                UGCType::GameManagedItems => steamworks::UGCType::GameManagedItems,
-                UGCType::All => steamworks::UGCType::All,
-            }
-        }
-    }
-
-    pub enum UserListType {
-        Published,
-        VotedOn,
-        VotedUp,
-        VotedDown,
-        Favorited,
-        Subscribed,
-        UsedOrPlayed,
-        Followed,
-    }
-
-    impl From<UserListType> for steamworks::UserList {
-        fn from(val: UserListType) -> Self {
-            match val {
-                UserListType::Published => steamworks::UserList::Published,
-                UserListType::VotedOn => steamworks::UserList::VotedOn,
-                UserListType::VotedUp => steamworks::UserList::VotedUp,
-                UserListType::VotedDown => steamworks::UserList::VotedDown,
-                UserListType::Favorited => steamworks::UserList::Favorited,
-                UserListType::Subscribed => steamworks::UserList::Subscribed,
-                UserListType::UsedOrPlayed => steamworks::UserList::UsedOrPlayed,
-                UserListType::Followed => steamworks::UserList::Followed,
-            }
-        }
-    }
-
-    pub enum UserListOrder {
-        CreationOrderAsc,
-        CreationOrderDesc,
-        TitleAsc,
-        LastUpdatedDesc,
-        SubscriptionDateDesc,
-        VoteScoreDesc,
-        ForModeration,
-    }
-
-    impl From<UserListOrder> for steamworks::UserListOrder {
-        fn from(val: UserListOrder) -> Self {
-            match val {
-                UserListOrder::CreationOrderAsc => steamworks::UserListOrder::CreationOrderAsc,
-                UserListOrder::CreationOrderDesc => steamworks::UserListOrder::CreationOrderDesc,
-                UserListOrder::TitleAsc => steamworks::UserListOrder::TitleAsc,
-                UserListOrder::LastUpdatedDesc => steamworks::UserListOrder::LastUpdatedDesc,
-                UserListOrder::SubscriptionDateDesc => {
-                    steamworks::UserListOrder::SubscriptionDateDesc
-                }
-                UserListOrder::VoteScoreDesc => steamworks::UserListOrder::VoteScoreDesc,
-                UserListOrder::ForModeration => steamworks::UserListOrder::ForModeration,
-            }
-        }
-    }
     #[derive(Debug, Clone, Serialize, Encode, Decode)]
     pub struct WorkshopItemStatistic {
         pub num_subscriptions: Option<u64>, //   0	gets the number of subscriptions.
@@ -336,8 +167,6 @@ pub mod workshop {
     #[derive(Debug)]
     pub struct WorkshopItemsResult {
         pub items: Vec<Option<WorkshopItem>>,
-        #[allow(dead_code)]
-        pub was_cached: bool,
     }
 
     impl WorkshopItemsResult {
@@ -346,7 +175,6 @@ pub mod workshop {
                 items: (0..query_results.returned_results())
                     .map(|i| WorkshopItem::from_query_results(&query_results, i))
                     .collect(),
-                was_cached: query_results.was_cached(),
             }
         }
     }

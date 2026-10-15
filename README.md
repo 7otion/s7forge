@@ -5,7 +5,7 @@ A CLI utility for Steam Workshop operations via Steam SDK, designed as a sidecar
 ### Prerequisites
 
 - Windows OS
-- Rust 1.70+
+- Rust 1.85+ (edition 2024)
 - Steam SDK files (steam_api64.dll, steam_api64.lib) in binary directory
 - Steam client running
 

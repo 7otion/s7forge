@@ -43,37 +43,3 @@ impl From<steamworks::PublishedFileVisibility> for UgcItemVisibility {
         }
     }
 }
-
-impl From<UgcItemVisibility> for steamworks::PublishedFileVisibility {
-    fn from(val: UgcItemVisibility) -> Self {
-        match val {
-            UgcItemVisibility::Public => steamworks::PublishedFileVisibility::Public,
-            UgcItemVisibility::FriendsOnly => steamworks::PublishedFileVisibility::FriendsOnly,
-            UgcItemVisibility::Private => steamworks::PublishedFileVisibility::Private,
-            UgcItemVisibility::Unlisted => steamworks::PublishedFileVisibility::Unlisted,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum UpdateStatus {
-    Invalid,
-    PreparingConfig,
-    PreparingContent,
-    UploadingContent,
-    UploadingPreviewFile,
-    CommittingChanges,
-}
-
-impl From<steamworks::UpdateStatus> for UpdateStatus {
-    fn from(visibility: steamworks::UpdateStatus) -> Self {
-        match visibility {
-            steamworks::UpdateStatus::Invalid => UpdateStatus::Invalid,
-            steamworks::UpdateStatus::PreparingConfig => UpdateStatus::PreparingConfig,
-            steamworks::UpdateStatus::PreparingContent => UpdateStatus::PreparingContent,
-            steamworks::UpdateStatus::UploadingContent => UpdateStatus::UploadingContent,
-            steamworks::UpdateStatus::UploadingPreviewFile => UpdateStatus::UploadingPreviewFile,
-            steamworks::UpdateStatus::CommittingChanges => UpdateStatus::CommittingChanges,
-        }
-    }
-}

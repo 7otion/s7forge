@@ -5,8 +5,9 @@ fn main() {
         res.set("FileDescription", "Steam Workshop Utility");
         res.set("ProductName", "s7forge");
         res.set("CompanyName", "Burak Kartal");
-        res.set("FileVersion", "0.1.1");
-        res.set("ProductVersion", "0.1.1");
+        let version = std::env::var("CARGO_PKG_VERSION").unwrap();
+        res.set("FileVersion", &version);
+        res.set("ProductVersion", &version);
         res.set("LegalCopyright", "MIT License - Open Source Software");
         res.set("OriginalFilename", "s7forge.exe");
         res.set("InternalName", "s7forge");
