@@ -8,8 +8,6 @@ use crate::core::workshop_item::workshop::WorkshopItemsResult;
 
 pub async fn discover_tags(steam_game_id: u32) -> Result<Vec<String>, String> {
     let steam_client = steam_manager::initialize_client(steam_game_id).await?;
-    let mut all_tags = HashSet::new();
-
     let sampling_tasks = vec![
         ("Popular (All Time)", UGCQueryType::RankedByVote, None),
         ("Popular (This Week)", UGCQueryType::RankedByTrend, Some(7)),
@@ -26,18 +24,38 @@ pub async fn discover_tags(steam_game_id: u32) -> Result<Vec<String>, String> {
         ),
     ];
 
-    for (_source_name, query_type, trend_days) in sampling_tasks {
-        match sample_tags_from_source(&steam_client, steam_game_id, query_type, trend_days).await {
+    let mut samples = Vec::new();
+    for (source_name, query_type, trend_days) in sampling_tasks {
+        let sample =
+            sample_tags_from_source(&steam_client, steam_game_id, query_type, trend_days).await;
+        samples.push(sample.map_err(|e| format!("{}: {}", source_name, e)));
+    }
+
+    merge_samples(samples)
+}
+
+/// Unions the tags of every successful sample. Failed samples are skipped, but
+/// if every sample failed the errors are returned instead of an empty list.
+fn merge_samples(samples: Vec<Result<HashSet<String>, String>>) -> Result<Vec<String>, String> {
+    let mut all_tags = HashSet::new();
+    let mut errors = Vec::new();
+    let mut any_succeeded = false;
+    for sample in samples {
+        match sample {
             Ok(tags) => {
+                any_succeeded = true;
                 all_tags.extend(tags);
             }
-            Err(_e) => {}
+            Err(error) => errors.push(error),
         }
+    }
+
+    if !any_succeeded {
+        return Err(format!("Every tag sample failed: {}", errors.join("; ")));
     }
 
     let mut tag_list: Vec<String> = all_tags.into_iter().collect();
     tag_list.sort();
-
     Ok(tag_list)
 }
 
@@ -121,4 +139,35 @@ async fn sample_tags_from_source(
     }
 
     Ok(tags)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample(tags: &[&str]) -> Result<HashSet<String>, String> {
+        Ok(tags.iter().map(|tag| tag.to_string()).collect())
+    }
+
+    #[test]
+    fn merges_and_sorts_successful_samples() {
+        let tags = merge_samples(vec![sample(&["ui", "battle"]), sample(&["battle", "maps"])]);
+        assert_eq!(tags.unwrap(), vec!["battle", "maps", "ui"]);
+    }
+
+    #[test]
+    fn partial_failure_still_returns_tags() {
+        let tags = merge_samples(vec![Err("Recent Items: timeout".into()), sample(&["ui"])]);
+        assert_eq!(tags.unwrap(), vec!["ui"]);
+    }
+
+    #[test]
+    fn all_samples_failing_is_an_error() {
+        let result = merge_samples(vec![
+            Err("Popular (All Time): timeout".into()),
+            Err("Recent Items: timeout".into()),
+        ]);
+        let error = result.expect_err("an empty list must not be reported as success");
+        assert!(error.contains("Recent Items: timeout"));
+    }
 }
