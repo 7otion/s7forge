@@ -1,14 +1,16 @@
 use futures_util::FutureExt;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use steamworks::PublishedFileId;
 use tokio::sync::mpsc;
 
 use crate::core::steam_manager;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct SubscribeResult {
     pub item_id: u64,
     pub success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
 }
 
 pub async fn subscribe(
@@ -18,17 +20,16 @@ pub async fn subscribe(
     let steam_client = steam_manager::initialize_client(steam_game_id).await?;
     let mut results = Vec::new();
 
+    // Every item gets a result; one failure must not hide what happened to the others.
     for item_id in item_ids {
-        let result = subscribe_single_item(&steam_client, steam_game_id, item_id).await;
-        match result {
-            Ok(success) => results.push(SubscribeResult { item_id, success }),
-            Err(error) => {
-                return Err(format!(
-                    "Failed to subscribe to item {}: {}",
-                    item_id, error
-                ));
-            }
-        }
+        let error = subscribe_single_item(&steam_client, steam_game_id, item_id)
+            .await
+            .err();
+        results.push(SubscribeResult {
+            item_id,
+            success: error.is_none(),
+            error,
+        });
     }
 
     Ok(results)
@@ -38,7 +39,7 @@ async fn subscribe_single_item(
     steam_client: &steamworks::Client,
     steam_game_id: u32,
     item_id: u64,
-) -> Result<bool, String> {
+) -> Result<(), String> {
     let (tx, mut rx) = mpsc::channel(32);
 
     let steam_client_clone = steam_client.clone();
@@ -56,9 +57,7 @@ async fn subscribe_single_item(
         loop {
             let _ = tx.blocking_send(());
             if let Ok(result) = rx_inner.try_recv() {
-                return result
-                    .map(|_| true)
-                    .map_err(|e| format!("Steam API error: {:?}", e));
+                return result.map_err(|e| format!("Steam API error: {:?}", e));
             }
 
             if start_time.elapsed() > timeout_duration {

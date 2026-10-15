@@ -49,6 +49,16 @@ s7forge unsubscribe --app-id 548430 --item-ids 123,456,789
 s7forge subscribed-items --app-id 548430
 ```
 
+`subscribe` and `unsubscribe` return one result per requested item, in order. A failed item
+does not stop the rest of the batch:
+
+```json
+[
+  { "item_id": 1, "success": false, "error": "Steam API error: FileNotFound" },
+  { "item_id": 123, "success": true }
+]
+```
+
 #### Discovery
 
 ```bash

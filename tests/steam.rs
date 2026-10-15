@@ -262,3 +262,31 @@ fn workshop_items_returns_full_description() {
         description.chars().count()
     );
 }
+
+/// Subscribing to an item the account is already subscribed to is a no-op,
+/// so this test does not change the account.
+#[test]
+fn subscribe_reports_each_item_even_when_one_fails() {
+    require_steam();
+    let ids = format!("1,{ITEM_ID}");
+    let value = s7forge(&["subscribe", "--app-id", APP_ID, "--item-ids", &ids]).json();
+    let results = as_array(&value);
+    assert_eq!(
+        results.len(),
+        2,
+        "every requested item needs a result: {value}"
+    );
+
+    assert_eq!(results[0]["item_id"], 1);
+    assert_eq!(results[0]["success"], false);
+    assert!(
+        results[0]["error"]
+            .as_str()
+            .unwrap()
+            .contains("FileNotFound")
+    );
+
+    assert_eq!(results[1]["item_id"].to_string(), ITEM_ID);
+    assert_eq!(results[1]["success"], true);
+    assert!(results[1].get("error").is_none());
+}
