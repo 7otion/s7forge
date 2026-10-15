@@ -3,6 +3,17 @@
 mod common;
 
 use common::*;
+use std::sync::Mutex;
+
+/// Held by tests that start or inspect a download of `ITEM_ID`, which run in
+/// parallel otherwise: a re-download in one makes the other see "downloading".
+static ITEM_DOWNLOAD: Mutex<()> = Mutex::new(());
+
+fn lock_item_download() -> std::sync::MutexGuard<'static, ()> {
+    ITEM_DOWNLOAD
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
 
 #[test]
 fn workshop_items_returns_requested_item() {
@@ -89,6 +100,7 @@ fn collection_items_rejects_non_collection() {
 #[test]
 fn check_item_download_reports_installed_item_as_complete() {
     require_steam();
+    let _lock = lock_item_download();
     let value = s7forge(&[
         "check-item-download",
         "--app-id",
@@ -296,6 +308,7 @@ fn subscribe_reports_each_item_even_when_one_fails() {
 #[test]
 fn download_workshop_item_completes_for_subscribed_item() {
     require_steam();
+    let _lock = lock_item_download();
     let value = s7forge(&[
         "download-workshop-item",
         "--app-id",
