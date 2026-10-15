@@ -123,6 +123,13 @@ fn validate_search_options(sort_by: &str, period: Option<&str>) -> Result<(), St
     Ok(())
 }
 
+fn require_item_ids(item_ids: &[u64]) -> Result<(), String> {
+    if item_ids.is_empty() {
+        return Err("Missing --item-ids".to_string());
+    }
+    Ok(())
+}
+
 struct CommandBuilder {
     app_id: Option<u32>,
     item_id: Option<u64>,
@@ -248,6 +255,7 @@ fn parse_command(
                 Ok(true)
             },
             |b| {
+                require_item_ids(&b.item_ids)?;
                 Ok(Command::WorkshopItems {
                     app_id: b.app_id.ok_or("Missing --app-id")?,
                     item_ids: b.item_ids,
@@ -270,6 +278,7 @@ fn parse_command(
                 Ok(true)
             },
             |b| {
+                require_item_ids(&b.item_ids)?;
                 Ok(Command::Subscribe {
                     app_id: b.app_id.ok_or("Missing --app-id")?,
                     item_ids: b.item_ids,
@@ -292,6 +301,7 @@ fn parse_command(
                 Ok(true)
             },
             |b| {
+                require_item_ids(&b.item_ids)?;
                 Ok(Command::Unsubscribe {
                     app_id: b.app_id.ok_or("Missing --app-id")?,
                     item_ids: b.item_ids,
@@ -475,16 +485,25 @@ fn parse_combined_command(
                 help::print_combined_help();
                 std::process::exit(0);
             }
-            Some(Long(flag)) => {
-                if KNOWN_COMMANDS.contains(&flag) {
-                    if let Some(cmd) = current_command.take() {
-                        command_blocks.push((cmd, std::mem::take(&mut current_args)));
-                    }
-                    current_command = Some(flag.to_string());
-                } else {
-                    current_args.push(format!("--{}", flag).into());
+            Some(Long(flag)) if KNOWN_COMMANDS.contains(&flag) => {
+                if let Some(cmd) = current_command.take() {
+                    command_blocks.push((cmd, std::mem::take(&mut current_args)));
                 }
+                current_command = Some(flag.to_string());
             }
+            Some(arg) if current_command.is_none() => {
+                let arg = match arg {
+                    Long(flag) => format!("--{}", flag),
+                    Short(flag) => format!("-{}", flag),
+                    Value(v) => v.to_string_lossy().into_owned(),
+                };
+                return Err(format!(
+                    "Unexpected argument before the first combined subcommand: {}",
+                    arg
+                )
+                .into());
+            }
+            Some(Long(flag)) => current_args.push(format!("--{}", flag).into()),
             Some(Short(flag)) => current_args.push(format!("-{}", flag).into()),
             Some(Value(v)) => current_args.push(v),
             None => break,
@@ -516,9 +535,21 @@ fn parse_combined_subcommand(
     let mut builder = CommandBuilder::new(Some(app_id));
 
     match command {
-        "subscribed-items" => Ok(Command::SubscribedItems { app_id }),
-        "workshop-path" => Ok(Command::WorkshopPath { app_id }),
-        "discover-tags" => Ok(Command::DiscoverTags { app_id }),
+        "subscribed-items" | "workshop-path" | "discover-tags" => {
+            if let Some(arg) = iter.next() {
+                return Err(format!(
+                    "Unexpected argument for {}: {}",
+                    command,
+                    arg.to_string_lossy()
+                )
+                .into());
+            }
+            Ok(match command {
+                "subscribed-items" => Command::SubscribedItems { app_id },
+                "workshop-path" => Command::WorkshopPath { app_id },
+                _ => Command::DiscoverTags { app_id },
+            })
+        }
         "search-workshop" => {
             while let Some(arg) = iter.next() {
                 parse_arg_from_os(
@@ -550,13 +581,13 @@ fn parse_combined_subcommand(
         "workshop-items" => {
             while let Some(arg) = iter.next() {
                 if arg.to_string_lossy() == "--item-ids" {
-                    if let Some(val) = iter.next() {
-                        builder.item_ids = CommandBuilder::parse_item_ids(&val.to_string_lossy())?;
-                    }
+                    let val = iter.next().ok_or("Missing value for --item-ids")?;
+                    builder.item_ids = CommandBuilder::parse_item_ids(&val.to_string_lossy())?;
                 } else {
                     return Err(format!("Unexpected argument: {}", arg.to_string_lossy()).into());
                 }
             }
+            require_item_ids(&builder.item_ids)?;
             Ok(Command::WorkshopItems {
                 app_id,
                 item_ids: builder.item_ids,
@@ -565,13 +596,12 @@ fn parse_combined_subcommand(
         "check-item-download" | "collection-items" => {
             while let Some(arg) = iter.next() {
                 if arg.to_string_lossy() == "--item-id" {
-                    if let Some(val) = iter.next() {
-                        builder.item_id = Some(
-                            val.to_string_lossy()
-                                .parse()
-                                .map_err(|_| "Invalid item-id")?,
-                        );
-                    }
+                    let val = iter.next().ok_or("Missing value for --item-id")?;
+                    builder.item_id = Some(
+                        val.to_string_lossy()
+                            .parse()
+                            .map_err(|_| "Invalid item-id")?,
+                    );
                 } else {
                     return Err(format!("Unexpected argument: {}", arg.to_string_lossy()).into());
                 }

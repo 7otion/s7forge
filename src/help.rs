@@ -189,9 +189,9 @@ pub fn print_combined_help() {
     println!("USAGE:");
     println!("    s7forge --app-id <APP_ID> combined [SUBCOMMANDS]\n");
     println!("NOTES:");
-    println!("    - Global --app-id is used for all commands unless overridden");
+    println!("    - --app-id must come before `combined` and applies to every subcommand");
     println!("    - Each subcommand can have its own specific options");
-    println!("    - Options are specified after the subcommand flag\\n");
+    println!("    - Options are specified after the subcommand flag\n");
     println!("EXAMPLES:");
     println!("    # Simple: two commands without extra options");
     println!("    s7forge --app-id 1142710 combined --subscribed-items --workshop-path");

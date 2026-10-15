@@ -211,3 +211,38 @@ fn workshop_path_notices_a_folder_created_after_a_miss() {
     let value = s7forge_with_cache(cache.path(), &args).json();
     assert_eq!(Path::new(value.as_str().unwrap()), folder);
 }
+
+fn combined(args: &[&str]) -> Run {
+    let mut full = vec!["--app-id", APP_ID, "combined"];
+    full.extend_from_slice(args);
+    s7forge(&full)
+}
+
+#[test]
+fn combined_rejects_arguments_before_the_first_subcommand() {
+    let stderr = combined(&["--query", "x", "--workshop-path"]).error();
+    assert!(stderr.contains("--query"), "unexpected error: {stderr}");
+}
+
+#[test]
+fn combined_rejects_arguments_to_subcommands_without_options() {
+    let stderr = combined(&["--workshop-path", "--bogus"]).error();
+    assert!(stderr.contains("--bogus"), "unexpected error: {stderr}");
+}
+
+#[test]
+fn combined_rejects_item_ids_without_value() {
+    let stderr = combined(&["--workshop-items", "--item-ids"]).error();
+    assert!(stderr.contains("--item-ids"), "unexpected error: {stderr}");
+}
+
+#[test]
+fn item_ids_are_required() {
+    for command in ["workshop-items", "subscribe", "unsubscribe"] {
+        let stderr = s7forge(&[command, "--app-id", APP_ID]).error();
+        assert!(
+            stderr.contains("--item-ids"),
+            "{command}: unexpected error: {stderr}"
+        );
+    }
+}
