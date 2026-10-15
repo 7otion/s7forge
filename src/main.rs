@@ -17,11 +17,13 @@ async fn main() {
         }
     };
 
+    // From here on, only the final result may reach stdout.
+    let stdout = utils::stdout_guard::StdoutGuard::redirect();
     let result = execute_command(command).await;
 
     match result {
         Ok(output) => {
-            println!("{}", output);
+            stdout.write_line(&output);
             std::process::exit(0);
         }
         Err(error) => {
