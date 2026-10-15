@@ -3,19 +3,20 @@ use std::path::{Path, PathBuf};
 
 pub const CACHE_DIR_ENV: &str = "S7FORGE_CACHE_DIR";
 
-/// `S7FORGE_CACHE_DIR` when set, otherwise `%LOCALAPPDATA%\s7forge\cache`.
+/// `S7FORGE_CACHE_DIR` when set, otherwise `cache` next to the executable.
 ///
 /// The directory is not created here. Every cache is optional: a cache that
-/// cannot be read or written behaves like an empty cache.
+/// cannot be read or written (e.g. the executable sits in Program Files)
+/// behaves like an empty cache.
 pub fn get_cache_dir() -> PathBuf {
     if let Some(dir) = std::env::var_os(CACHE_DIR_ENV).filter(|dir| !dir.is_empty()) {
         return PathBuf::from(dir);
     }
 
-    std::env::var_os("LOCALAPPDATA")
-        .map(PathBuf::from)
+    std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(Path::to_path_buf))
         .unwrap_or_else(std::env::temp_dir)
-        .join("s7forge")
         .join("cache")
 }
 

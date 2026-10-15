@@ -192,7 +192,7 @@ published but not installed yet.
 
 ### Caching
 
-- Cache files live in `%LOCALAPPDATA%\s7forge\cache\`. Set the `S7FORGE_CACHE_DIR` environment variable to use another directory.
+- Cache files live in `cache\` next to `s7forge.exe`. Set the `S7FORGE_CACHE_DIR` environment variable to use another directory, e.g. when the executable is installed in a read-only folder such as Program Files.
 - Caching is best-effort: if the cache directory cannot be read or written, commands still succeed without it.
 - What is cached, and for how long:
   - workshop item details: 30 minutes (so `time_updated` shows new mod versions soon)

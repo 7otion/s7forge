@@ -5,8 +5,30 @@ mod common;
 use common::*;
 use std::fs;
 
-/// Installed apps live in read-only folders such as Program Files, so the cache
-/// must not live next to the executable, and a broken cache must never fail a command.
+/// Without S7FORGE_CACHE_DIR the cache lives next to the executable, so a
+/// standalone s7forge stays portable.
+#[test]
+fn cache_defaults_to_executable_directory() {
+    require_steam();
+    let dir = TempDir::new("exe-default");
+    let exe = dir.path().join("s7forge.exe");
+    fs::copy(env!("CARGO_BIN_EXE_s7forge"), &exe).unwrap();
+
+    let mut cmd = std::process::Command::new(&exe);
+    cmd.args(["workshop-items", "--app-id", APP_ID, "--item-ids", ITEM_ID]);
+    cmd.env_remove(CACHE_DIR_ENV);
+    run(cmd).json();
+
+    let cache = dir.path().join("cache");
+    assert!(
+        fs::read_dir(&cache).map(|d| d.count() > 0).unwrap_or(false),
+        "expected cache files in {}",
+        cache.display()
+    );
+}
+
+/// An installed s7forge may live in a read-only folder such as Program Files;
+/// the cache is optional, so that must never fail a command.
 #[test]
 fn unwritable_executable_directory_does_not_break_commands() {
     require_steam();

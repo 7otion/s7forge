@@ -52,7 +52,7 @@ pub fn print_clear_cache_help() {
     println!("    -h, --help    Print help\n");
     println!("CACHE LOCATION:");
     println!(
-        "    %LOCALAPPDATA%\\s7forge\\cache, or the directory in the S7FORGE_CACHE_DIR environment variable\n"
+        "    `cache` next to s7forge.exe, or the directory in the S7FORGE_CACHE_DIR environment variable\n"
     );
     println!("EXAMPLE:");
     println!("    s7forge clear-cache");
@@ -211,7 +211,7 @@ pub fn print_general_help() {
     println!("    -v, --version            Print version\n");
     println!("ENVIRONMENT:");
     println!(
-        "    S7FORGE_CACHE_DIR        Cache directory (default: %LOCALAPPDATA%\\s7forge\\cache)\n"
+        "    S7FORGE_CACHE_DIR        Cache directory (default: `cache` next to s7forge.exe)\n"
     );
     println!("Use 's7forge <COMMAND> --help' for more information on a specific command.");
 }
