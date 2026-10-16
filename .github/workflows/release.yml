@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release --locked
+
+      - name: Collect assets
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory release | Out-Null
+          Copy-Item target/release/s7forge.exe release/
+          $dll = Get-ChildItem target/release/build -Recurse -Filter steam_api64.dll | Select-Object -First 1
+          if (-not $dll) { throw 'steam_api64.dll was not found in the build output.' }
+          Copy-Item $dll.FullName release/
+
+      - name: Check the version matches the tag
+        shell: pwsh
+        run: |
+          $expected = "s7forge $($env:GITHUB_REF_NAME.TrimStart('v'))"
+          $actual = (& release/s7forge.exe --version).Trim()
+          if ($actual -ne $expected) { throw "Tag $env:GITHUB_REF_NAME does not match '$actual'." }
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/s7forge.exe
+            release/steam_api64.dll
