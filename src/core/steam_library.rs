@@ -17,16 +17,12 @@ pub fn parse_library_folders(vdf: &str) -> Vec<String> {
 }
 
 /// Removes paths that point to the same folder, keeping the first spelling.
-/// Windows paths are case-insensitive, and Steam writes some with forward slashes.
 pub fn dedupe_paths(paths: Vec<String>) -> Vec<String> {
     let mut seen = Vec::new();
     paths
         .into_iter()
         .filter(|path| {
-            let key = path
-                .replace('/', "\\")
-                .trim_end_matches('\\')
-                .to_lowercase();
+            let key = path_key(path);
             if seen.contains(&key) {
                 false
             } else {
@@ -35,6 +31,19 @@ pub fn dedupe_paths(paths: Vec<String>) -> Vec<String> {
             }
         })
         .collect()
+}
+
+/// Windows paths are case-insensitive, and Steam writes some with forward slashes.
+#[cfg(windows)]
+fn path_key(path: &str) -> String {
+    path.replace('/', "\\")
+        .trim_end_matches('\\')
+        .to_lowercase()
+}
+
+#[cfg(not(windows))]
+fn path_key(_path: &str) -> String {
+    unimplemented!("comparing Steam library paths on this platform")
 }
 
 /// Every Steam library folder, read from each Steam installation's `libraryfolders.vdf`.

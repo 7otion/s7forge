@@ -1,12 +1,16 @@
+#[cfg(windows)]
 use winreg::RegKey;
+#[cfg(windows)]
 use winreg::enums::*;
 
+#[cfg(windows)]
 use crate::core::steam_library::dedupe_paths;
 
 /// Folders of every Steam installation found in the registry.
 ///
 /// Steam writes `HKCU\...\Valve\Steam\SteamPath` for the current user and
 /// `HKLM\...\Valve\Steam\InstallPath` at install time (under WOW6432Node on 64-bit Windows).
+#[cfg(windows)]
 pub fn steam_install_paths() -> Result<Vec<String>, String> {
     let lookups = [
         (HKEY_CURRENT_USER, "SOFTWARE\\Valve\\Steam", "SteamPath"),
@@ -29,4 +33,9 @@ pub fn steam_install_paths() -> Result<Vec<String>, String> {
         .collect();
 
     Ok(dedupe_paths(paths))
+}
+
+#[cfg(not(windows))]
+pub fn steam_install_paths() -> Result<Vec<String>, String> {
+    unimplemented!("finding Steam installations on this platform")
 }

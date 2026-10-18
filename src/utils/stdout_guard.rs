@@ -7,25 +7,34 @@
 //! Win32 standard output handle) is pointed at stderr, and the real stdout is kept
 //! aside for the result alone.
 
+#[cfg(windows)]
 use std::fs::File;
+#[cfg(windows)]
 use std::io::Write;
+#[cfg(windows)]
 use std::mem::ManuallyDrop;
+#[cfg(windows)]
 use std::os::windows::io::FromRawHandle;
 
+#[cfg(windows)]
 unsafe extern "C" {
     fn _dup(fd: i32) -> i32;
     fn _dup2(source: i32, target: i32) -> i32;
     fn _get_osfhandle(fd: i32) -> isize;
 }
 
+#[cfg(windows)]
 const STDOUT_FD: i32 = 1;
+#[cfg(windows)]
 const STDERR_FD: i32 = 2;
 
 pub struct StdoutGuard {
     /// A duplicate of the original stdout, or `None` if the redirect failed.
+    #[cfg_attr(not(windows), allow(dead_code))]
     original: Option<i32>,
 }
 
+#[cfg(windows)]
 impl StdoutGuard {
     /// Sends everything written to stdout from now on to stderr.
     pub fn redirect() -> Self {
@@ -59,5 +68,16 @@ impl StdoutGuard {
         });
         let _ = writeln!(file, "{}", text);
         let _ = file.flush();
+    }
+}
+
+#[cfg(not(windows))]
+impl StdoutGuard {
+    pub fn redirect() -> Self {
+        unimplemented!("keeping stdout for the result on this platform")
+    }
+
+    pub fn write_line(&self, _text: &str) {
+        unimplemented!("keeping stdout for the result on this platform")
     }
 }
