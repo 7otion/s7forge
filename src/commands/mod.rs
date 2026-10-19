@@ -11,3 +11,4 @@ pub mod subscribed_items;
 pub mod unsubscribe;
 pub mod workshop_items;
 pub mod workshop_path;
+pub mod workshop_state;

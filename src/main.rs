@@ -42,6 +42,7 @@ async fn execute_command(command: Command) -> Result<String, String> {
                 let key = match &cmd {
                     Command::SubscribedItems { .. } => "subscribed-items".to_string(),
                     Command::WorkshopPath { .. } => "workshop-path".to_string(),
+                    Command::WorkshopState { .. } => "workshop-state".to_string(),
                     Command::SearchWorkshop { .. } => format!("search-workshop-{}", idx),
                     Command::WorkshopItems { .. } => format!("workshop-items-{}", idx),
                     Command::CheckItemDownload { .. } => format!("check-item-download-{}", idx),
@@ -117,8 +118,12 @@ async fn execute_single_command(command: Command) -> Result<String, String> {
             Some(path) => Ok(serde_json::to_string_pretty(&path).unwrap()),
             None => Err(format!("Workshop path not found for app ID {}", app_id)),
         },
+        Command::WorkshopState { app_id } => commands::workshop_state::workshop_state(app_id)
+            .await
+            .map(|state| serde_json::to_string_pretty(&state).unwrap()),
         Command::AppInstallationPath { app_id } => {
             commands::app_installation_path::app_installation_path(app_id)
+                .await
                 .map(|path| serde_json::to_string_pretty(&path).unwrap())
         }
         Command::SteamLibraryPaths => commands::steam_library_paths::steam_library_paths()

@@ -76,6 +76,22 @@ fn search_results_include_local_state() {
 }
 
 #[test]
+fn subscribed_items_report_subscription_time() {
+    require_steam();
+    let value = s7forge(&["subscribed-items", "--app-id", APP_ID]).json();
+    let item = as_array(&value)
+        .iter()
+        .find(|item| item["published_file_id"].as_u64() == ITEM_ID.parse().ok())
+        .expect("fixture item must be subscribed");
+
+    let subscribed = item["time_subscribed"]
+        .as_u64()
+        .expect("time_subscribed must be a number");
+    // Nobody can subscribe to an item before it exists.
+    assert!(subscribed >= item["time_created"].as_u64().unwrap());
+}
+
+#[test]
 fn subscribed_items_contains_fixture_item() {
     require_steam();
     let value = s7forge(&["subscribed-items", "--app-id", APP_ID]).json();

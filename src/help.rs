@@ -151,6 +151,31 @@ pub fn print_discover_tags_help() {
     println!("    s7forge discover-tags --app-id 548430");
 }
 
+pub fn print_workshop_state_help() {
+    println!(
+        "List the local state of every subscription, without item details
+"
+    );
+    println!("Reads the Steam client's own files (no Steam API); if they can't be read,");
+    println!(
+        "asks the running Steam client instead and remembers that for a day.
+"
+    );
+    println!("USAGE:");
+    println!(
+        "    s7forge workshop-state --app-id <APP_ID>
+"
+    );
+    println!("OPTIONS:");
+    println!("    --app-id <APP_ID>      Steam App ID of the game");
+    println!(
+        "    -h, --help             Print help
+"
+    );
+    println!("EXAMPLE:");
+    println!("    s7forge workshop-state --app-id 548430");
+}
+
 pub fn print_app_installation_path_help() {
     println!("Get the installation path for a Steam app\n");
     println!("USAGE:");
@@ -198,6 +223,7 @@ pub fn print_general_help() {
     println!("    workshop-items           Get details about workshop items");
     println!("    collection-items         Get items from a workshop collection");
     println!("    subscribed-items         List all items you're subscribed to");
+    println!("    workshop-state           Local state of every subscription, no item details");
     println!("    check-item-download      Check if a workshop item is downloaded");
     println!("    subscribe                Subscribe to workshop items");
     println!("    unsubscribe              Unsubscribe from workshop items");

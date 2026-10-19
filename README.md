@@ -47,6 +47,9 @@ s7forge unsubscribe --app-id 548430 --item-ids 123,456,789
 
 # List subscribed items
 s7forge subscribed-items --app-id 548430
+
+# Local state of every subscription, without item details (no Steam API needed)
+s7forge workshop-state --app-id 548430
 ```
 
 `subscribe` and `unsubscribe` return one result per requested item, in order. A failed item
@@ -190,6 +193,50 @@ read fresh on every run and never cached.
 PC. If it is lower than the item's own `time_updated`, a newer version is
 published but not installed yet.
 
+### Subscription time
+
+Items from `subscribed-items` also carry when this account subscribed:
+
+```json
+"time_subscribed": 1747551218
+```
+
+### Subscription state
+
+`workshop-state` lists what the local Steam client knows about every
+subscription of the logged-in account, without titles or any other item
+details, so a caller can tell what changed since it last looked:
+
+```json
+{
+  "route": "files",
+  "account_id": 288138212,
+  "items": [
+    {
+      "item_id": 2858004741,
+      "installed": true,
+      "folder": "F:\SteamLibrary\steamapps\workshop\content\1142710\2858004741",
+      "size_on_disk": 13386,
+      "installed_time_updated": 1742939179,
+      "latest_time_updated": 1742939179,
+      "needs_update": false,
+      "download_pending": false
+    }
+  ]
+}
+```
+
+It reads Steam's own `appworkshop_<app_id>.acf` and `loginusers.vdf` (`route:
+"files"`, a few milliseconds, no Steam API). If those files can't be read it
+asks the running Steam client instead (`route: "steam"`; `latest_time_updated`
+is then `null`) and remembers the failure for a day, so later calls skip the
+files until then. `app-installation-path` has the same fallback.
+
+It is a number (Unix seconds), or `null` when Steam didn't say. Steam only gives this time
+when listing the account's subscriptions page by page (50 per page), not when looking items
+up by id. So s7forge walks the subscription list newest first and caches the times; later
+runs usually need one page.
+
 ### Caching
 
 - Cache files live in `cache\` next to `s7forge.exe`. Set the `S7FORGE_CACHE_DIR` environment variable to use another directory, e.g. when the executable is installed in a read-only folder such as Program Files.
@@ -198,6 +245,8 @@ published but not installed yet.
   - workshop item details: 30 minutes (so `time_updated` shows new mod versions soon)
   - creator names: 7 days (looking up an unknown name can take up to 2 seconds)
   - search results: 10 minutes
+  - subscription times: 1 year (each run still checks the newest subscriptions, so a
+    re-subscription shows its new time)
 - Local install state (`install`, `state`) is never cached.
 - Use `s7forge clear-cache` to clear all cached data
 

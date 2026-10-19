@@ -14,6 +14,7 @@ fn help_lists_every_command() {
         "workshop-items",
         "collection-items",
         "subscribed-items",
+        "workshop-state",
         "check-item-download",
         "subscribe",
         "unsubscribe",
@@ -83,6 +84,22 @@ fn workshop_path_points_to_app_content_folder() {
         "workshop path does not exist: {path}"
     );
     assert!(path.ends_with(APP_ID));
+}
+
+#[test]
+fn workshop_state_reads_the_manifest_without_steam() {
+    let value = s7forge(&["workshop-state", "--app-id", APP_ID]).json();
+    assert_eq!(value["route"], "files");
+    let items = as_array(&value["items"]);
+    assert!(!items.is_empty(), "no subscriptions in the manifest");
+    let item = items
+        .iter()
+        .find(|item| item["item_id"].to_string() == ITEM_ID)
+        .expect("the fixture item is subscribed");
+    assert!(item["installed"].is_boolean());
+    assert!(item["folder"].is_string() || item["folder"].is_null());
+    assert!(item["needs_update"].is_boolean());
+    assert!(item["download_pending"].is_boolean());
 }
 
 #[test]

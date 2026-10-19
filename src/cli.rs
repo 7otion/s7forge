@@ -42,6 +42,9 @@ pub enum Command {
     WorkshopPath {
         app_id: u32,
     },
+    WorkshopState {
+        app_id: u32,
+    },
     AppInstallationPath {
         app_id: u32,
     },
@@ -344,6 +347,16 @@ fn parse_command(
                 })
             })
         }
+        "workshop-state" => parse_no_arg_command(
+            parser,
+            global_app_id,
+            help::print_workshop_state_help,
+            |b| {
+                Ok(Command::WorkshopState {
+                    app_id: b.app_id.ok_or("Missing --app-id")?,
+                })
+            },
+        ),
         "discover-tags" => {
             parse_no_arg_command(parser, global_app_id, help::print_discover_tags_help, |b| {
                 Ok(Command::DiscoverTags {
@@ -535,7 +548,7 @@ fn parse_combined_subcommand(
     let mut builder = CommandBuilder::new(Some(app_id));
 
     match command {
-        "subscribed-items" | "workshop-path" | "discover-tags" => {
+        "subscribed-items" | "workshop-path" | "workshop-state" | "discover-tags" => {
             if let Some(arg) = iter.next() {
                 return Err(format!(
                     "Unexpected argument for {}: {}",
@@ -547,6 +560,7 @@ fn parse_combined_subcommand(
             Ok(match command {
                 "subscribed-items" => Command::SubscribedItems { app_id },
                 "workshop-path" => Command::WorkshopPath { app_id },
+                "workshop-state" => Command::WorkshopState { app_id },
                 _ => Command::DiscoverTags { app_id },
             })
         }
