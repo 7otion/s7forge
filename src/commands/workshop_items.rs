@@ -138,8 +138,20 @@ pub async fn workshop_items(
     Ok(items)
 }
 
-/// Fetches item details from Steam, keeping only Community items.
+/// Steam answers a details request for at most this many ids.
+const DETAILS_PER_QUERY: usize = 1000;
+
+/// Fetches item details from Steam, keeping only Community items; more ids
+/// than one request takes are fetched in consecutive requests.
 async fn query_items(steam_game_id: u32, ids: &[u64]) -> Result<Vec<WorkshopItem>, String> {
+    let mut items = Vec::with_capacity(ids.len());
+    for chunk in ids.chunks(DETAILS_PER_QUERY) {
+        items.extend(query_items_chunk(steam_game_id, chunk).await?);
+    }
+    Ok(items)
+}
+
+async fn query_items_chunk(steam_game_id: u32, ids: &[u64]) -> Result<Vec<WorkshopItem>, String> {
     let ids_to_fetch = ids.to_vec();
     let steam_client = steam_manager::initialize_client(steam_game_id).await?;
 
