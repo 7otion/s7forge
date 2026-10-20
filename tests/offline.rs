@@ -15,6 +15,7 @@ fn help_lists_every_command() {
         "collection-items",
         "subscribed-items",
         "workshop-state",
+        "subscription-times",
         "check-item-download",
         "subscribe",
         "unsubscribe",

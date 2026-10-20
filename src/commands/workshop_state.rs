@@ -1,20 +1,18 @@
-use std::path::Path;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 use steamworks::{ItemState, PublishedFileId};
 use tokio::task;
 
+use crate::commands::workshop_path::workshop_path;
 use crate::core::steam_manager;
 use crate::core::workshop_manifest::{self, ManifestItem};
 use crate::utils::fast_path::{Fast, Route, with_fallback};
 
-/// What the local Steam client knows about every subscription of the
-/// logged-in account, without any item details: enough to tell what changed
-/// since the last look.
 #[derive(Debug, Serialize)]
 pub struct WorkshopState {
     pub route: Route,
-    /// 32-bit account id the subscriptions belong to; `None` when unknown.
     pub account_id: Option<u32>,
     pub items: Vec<WorkshopStateItem>,
 }
@@ -23,30 +21,71 @@ pub struct WorkshopState {
 pub struct WorkshopStateItem {
     pub item_id: u64,
     pub installed: bool,
-    /// Where the item is on this PC; `None` when it is not downloaded.
     pub folder: Option<String>,
     pub size_on_disk: Option<u64>,
-    /// `time_updated` of the version on disk.
     pub installed_time_updated: Option<u64>,
-    /// `time_updated` of the newest version Steam knows about; only the files
-    /// route knows it.
     pub latest_time_updated: Option<u64>,
     pub needs_update: bool,
     pub download_pending: bool,
 }
 
 pub async fn workshop_state(steam_game_id: u32) -> Result<WorkshopState, String> {
-    with_fallback(
+    let steam_error = match with_fallback(
         "workshop-state",
         || from_files(steam_game_id),
         || from_steam(steam_game_id),
     )
     .await
-    .map(|(route, (account_id, items))| WorkshopState {
-        route,
-        account_id,
-        items,
+    {
+        Ok((route, (account_id, items))) => {
+            return Ok(WorkshopState {
+                route,
+                account_id,
+                items,
+            });
+        }
+        Err(error) => error,
+    };
+    let content_folder = workshop_path(steam_game_id).ok_or(steam_error)?;
+    Ok(WorkshopState {
+        route: Route::Folder,
+        account_id: None,
+        items: from_folder(Path::new(&content_folder))?,
     })
+}
+
+fn from_folder(content_folder: &Path) -> Result<Vec<WorkshopStateItem>, String> {
+    let entries = fs::read_dir(content_folder)
+        .map_err(|e| format!("Failed to list {}: {}", content_folder.display(), e))?;
+    let mut items = Vec::new();
+    for entry in entries.flatten() {
+        let folder = entry.path();
+        if let Some(item_id) = item_id_of(&folder) {
+            items.push(state_from_folder(item_id, folder));
+        }
+    }
+    items.sort_by_key(|item| item.item_id);
+    Ok(items)
+}
+
+fn item_id_of(folder: &Path) -> Option<u64> {
+    if !folder.is_dir() {
+        return None;
+    }
+    folder.file_name()?.to_str()?.parse().ok()
+}
+
+fn state_from_folder(item_id: u64, folder: PathBuf) -> WorkshopStateItem {
+    WorkshopStateItem {
+        item_id,
+        installed: true,
+        folder: Some(folder.to_string_lossy().into_owned()),
+        size_on_disk: None,
+        installed_time_updated: None,
+        latest_time_updated: None,
+        needs_update: false,
+        download_pending: false,
+    }
 }
 
 type Subscriptions = (Option<u32>, Vec<WorkshopStateItem>);
@@ -72,8 +111,6 @@ fn from_files(app_id: u32) -> Fast<Subscriptions> {
     Fast::Answer(Ok((account_id, items)))
 }
 
-/// Several accounts on one PC share the manifest; keep the logged-in one's
-/// subscriptions. With either side unknown, keep everything.
 fn belongs_to(item: &ManifestItem, account_id: Option<u32>) -> bool {
     match (item.subscribed_by, account_id) {
         (Some(owner), Some(account)) => owner == account,
@@ -197,6 +234,26 @@ mod tests {
         assert!(!belongs_to(&item(None, None, Some(7)), Some(8)));
         assert!(belongs_to(&item(None, None, None), Some(8)));
         assert!(belongs_to(&item(None, None, Some(7)), None));
+    }
+
+    #[test]
+    fn folder_names_that_are_ids_become_installed_items() {
+        let root =
+            std::env::temp_dir().join(format!("s7forge-folder-route-{}", std::process::id()));
+        for name in ["2858004741", "notanid", "12"] {
+            fs::create_dir_all(root.join(name)).unwrap();
+        }
+        fs::write(root.join("99.txt"), b"").unwrap();
+        let items = from_folder(&root).unwrap();
+        fs::remove_dir_all(&root).unwrap();
+        let ids: Vec<u64> = items.iter().map(|item| item.item_id).collect();
+        assert_eq!(ids, vec![12, 2858004741]);
+        assert!(
+            items
+                .iter()
+                .all(|item| item.installed && item.folder.is_some())
+        );
+        assert!(items.iter().all(|item| item.size_on_disk.is_none()));
     }
 
     #[test]

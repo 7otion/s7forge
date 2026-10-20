@@ -50,6 +50,9 @@ s7forge subscribed-items --app-id 548430
 
 # Local state of every subscription, without item details (no Steam API needed)
 s7forge workshop-state --app-id 548430
+
+# When this account subscribed to each item: [{ item_id, time_subscribed }]
+s7forge subscription-times --app-id 548430
 ```
 
 `subscribe` and `unsubscribe` return one result per requested item, in order. A failed item
@@ -230,7 +233,10 @@ It reads Steam's own `appworkshop_<app_id>.acf` and `loginusers.vdf` (`route:
 "files"`, a few milliseconds, no Steam API). If those files can't be read it
 asks the running Steam client instead (`route: "steam"`; `latest_time_updated`
 is then `null`) and remembers the failure for a day, so later calls skip the
-files until then. `app-installation-path` has the same fallback.
+files until then. If the Steam client can't be reached either, it lists the
+item folders under `<library>/steamapps/workshop/content/<app_id>` (`route:
+"folder"`: every item counts as installed, sizes and times are `null`).
+`app-installation-path` has the same files-then-client fallback.
 
 It is a number (Unix seconds), or `null` when Steam didn't say. Steam only gives this time
 when listing the account's subscriptions page by page (50 per page), not when looking items

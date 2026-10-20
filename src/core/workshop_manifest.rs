@@ -1,7 +1,3 @@
-//! The Steam client's own record of a game's Workshop subscriptions:
-//! `<library>/steamapps/workshop/appworkshop_<app_id>.acf`, plus the account
-//! that is logged in, from `<steam>/config/loginusers.vdf`.
-
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -9,13 +5,10 @@ use crate::core::keyvalues::{self, Table};
 use crate::core::steam_install_paths::steam_install_paths;
 use crate::core::steam_library::{app_library, library_paths};
 
-/// A 64-bit Steam id minus this is the 32-bit account id Steam writes into
-/// the manifest's `subscribedby`.
 const STEAM_ID_BASE: u64 = 76561197960265728;
 
 #[derive(Debug, Default, PartialEq)]
 pub struct WorkshopManifest {
-    /// `<library>/steamapps/workshop/content/<app_id>`, next to the manifest.
     pub content_folder: Option<PathBuf>,
     pub items: Vec<ManifestItem>,
 }
@@ -24,7 +17,6 @@ pub struct WorkshopManifest {
 pub struct ManifestItem {
     pub item_id: u64,
     pub subscribed_by: Option<u32>,
-    /// `time_updated` of the newest version Steam knows about.
     pub latest_time_updated: Option<u64>,
     pub installed: Option<InstalledItem>,
 }
@@ -96,8 +88,6 @@ fn installed_item(entry: &Table) -> Option<InstalledItem> {
     })
 }
 
-/// The 32-bit account id of the user logged in to Steam on this PC, from the
-/// first readable `loginusers.vdf`; `None` when it can't be told.
 pub fn logged_in_account() -> Option<u32> {
     steam_install_paths()
         .ok()?
@@ -108,7 +98,6 @@ pub fn logged_in_account() -> Option<u32> {
         .map(account_id)
 }
 
-/// The user marked `MostRecent`, else the one with the newest `Timestamp`.
 pub fn logged_in_steam_id(text: &str) -> Option<u64> {
     let root = keyvalues::parse(text).ok()?;
     let users = keyvalues::table(&root, "users")?;

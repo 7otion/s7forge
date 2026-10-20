@@ -16,6 +16,18 @@ fn lock_item_download() -> std::sync::MutexGuard<'static, ()> {
 }
 
 #[test]
+fn subscription_times_cover_the_fixture_item() {
+    require_steam();
+    let value = s7forge(&["subscription-times", "--app-id", APP_ID]).json();
+    let times = as_array(&value);
+    let item = times
+        .iter()
+        .find(|time| time["item_id"].to_string() == ITEM_ID)
+        .expect("the fixture item is subscribed");
+    assert!(item["time_subscribed"].as_u64().unwrap() > 0);
+}
+
+#[test]
 fn workshop_items_returns_requested_item() {
     require_steam();
     let value = s7forge(&["workshop-items", "--app-id", APP_ID, "--item-ids", ITEM_ID]).json();

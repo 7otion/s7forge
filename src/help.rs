@@ -151,6 +151,26 @@ pub fn print_discover_tags_help() {
     println!("    s7forge discover-tags --app-id 548430");
 }
 
+pub fn print_subscription_times_help() {
+    println!(
+        "When this account subscribed to each of its subscribed items
+"
+    );
+    println!("USAGE:");
+    println!(
+        "    s7forge subscription-times --app-id <APP_ID>
+"
+    );
+    println!("OPTIONS:");
+    println!("    --app-id <APP_ID>      Steam App ID of the game");
+    println!(
+        "    -h, --help             Print help
+"
+    );
+    println!("EXAMPLE:");
+    println!("    s7forge subscription-times --app-id 548430");
+}
+
 pub fn print_workshop_state_help() {
     println!(
         "List the local state of every subscription, without item details
@@ -224,6 +244,7 @@ pub fn print_general_help() {
     println!("    collection-items         Get items from a workshop collection");
     println!("    subscribed-items         List all items you're subscribed to");
     println!("    workshop-state           Local state of every subscription, no item details");
+    println!("    subscription-times       When this account subscribed to each item");
     println!("    check-item-download      Check if a workshop item is downloaded");
     println!("    subscribe                Subscribe to workshop items");
     println!("    unsubscribe              Unsubscribe from workshop items");

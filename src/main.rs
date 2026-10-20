@@ -43,6 +43,7 @@ async fn execute_command(command: Command) -> Result<String, String> {
                     Command::SubscribedItems { .. } => "subscribed-items".to_string(),
                     Command::WorkshopPath { .. } => "workshop-path".to_string(),
                     Command::WorkshopState { .. } => "workshop-state".to_string(),
+                    Command::SubscriptionTimes { .. } => "subscription-times".to_string(),
                     Command::SearchWorkshop { .. } => format!("search-workshop-{}", idx),
                     Command::WorkshopItems { .. } => format!("workshop-items-{}", idx),
                     Command::CheckItemDownload { .. } => format!("check-item-download-{}", idx),
@@ -118,6 +119,11 @@ async fn execute_single_command(command: Command) -> Result<String, String> {
             Some(path) => Ok(serde_json::to_string_pretty(&path).unwrap()),
             None => Err(format!("Workshop path not found for app ID {}", app_id)),
         },
+        Command::SubscriptionTimes { app_id } => {
+            commands::subscribed_items::subscription_times_of_account(app_id)
+                .await
+                .map(|times| serde_json::to_string_pretty(&times).unwrap())
+        }
         Command::WorkshopState { app_id } => commands::workshop_state::workshop_state(app_id)
             .await
             .map(|state| serde_json::to_string_pretty(&state).unwrap()),

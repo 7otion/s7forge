@@ -15,6 +15,12 @@ const PAGE_SIZE: usize = 50;
 type SubscriptionTimeCache = TimedCache<u64, u64>;
 
 #[derive(Debug, Clone, Serialize)]
+pub struct SubscriptionTime {
+    pub item_id: u64,
+    pub time_subscribed: u64,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct SubscribedItem {
     #[serde(flatten)]
     pub item: EnhancedWorkshopItem,
@@ -46,6 +52,30 @@ pub async fn subscribed_items(steam_game_id: u32) -> Result<Vec<SubscribedItem>,
                 item,
                 time_subscribed,
             }
+        })
+        .collect())
+}
+
+pub async fn subscription_times_of_account(
+    steam_game_id: u32,
+) -> Result<Vec<SubscriptionTime>, String> {
+    let steam_client = steam_manager::initialize_client(steam_game_id).await?;
+    let item_ids: Vec<u64> = task::spawn_blocking(move || steam_client.ugc().subscribed_items())
+        .await
+        .map_err(|e| format!("Failed to fetch subscribed items: {:?}", e))?
+        .into_iter()
+        .map(|id| id.0)
+        .collect();
+    let times = subscription_times(steam_game_id, &item_ids).await;
+    Ok(item_ids
+        .into_iter()
+        .filter_map(|item_id| {
+            times
+                .get(&item_id)
+                .map(|&time_subscribed| SubscriptionTime {
+                    item_id,
+                    time_subscribed,
+                })
         })
         .collect())
 }

@@ -8,8 +8,6 @@ use crate::core::steam_manager;
 use crate::utils::extract_quoted_strings::extract_quoted_strings;
 use crate::utils::fast_path::{Fast, with_fallback};
 
-/// `<library>/steamapps/common/<installdir>`, read from the app's
-/// `appmanifest_<id>.acf`; asked of the Steam client when the files can't be read.
 pub async fn app_installation_path(app_id: u32) -> Result<String, String> {
     with_fallback(
         "app-installation-path",

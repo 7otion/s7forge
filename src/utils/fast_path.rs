@@ -1,8 +1,3 @@
-//! A command with two routes: a fast one that reads Steam's files on disk,
-//! and a slow one through the running Steam client. When the fast route
-//! fails, the failure is remembered for a day so every call until then goes
-//! straight to the slow route instead of failing the same way again.
-
 use std::future::Future;
 
 use serde::Serialize;
@@ -12,7 +7,6 @@ use crate::utils::timed_cache::{TimedCache, now_secs};
 
 const FAILURE_TTL_SECS: u64 = 24 * 60 * 60;
 
-/// Route name -> why the fast route failed last time.
 type FailureCache = TimedCache<String, String>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
@@ -20,6 +14,7 @@ type FailureCache = TimedCache<String, String>;
 pub enum Route {
     Files,
     Steam,
+    Folder,
 }
 
 pub enum Fast<T> {

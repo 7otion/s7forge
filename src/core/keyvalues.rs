@@ -1,6 +1,3 @@
-//! Valve's KeyValues text format, as written by the Steam client in `.vdf`
-//! and `.acf` files: nested `"key" "value"` and `"key" { … }` pairs.
-
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -34,7 +31,6 @@ struct Parser<'a> {
     at: usize,
 }
 
-/// Parses a whole document into its top-level pairs.
 pub fn parse(text: &str) -> Result<Table, ParseError> {
     let mut parser = Parser {
         bytes: text.as_bytes(),
@@ -50,8 +46,6 @@ pub fn parse(text: &str) -> Result<Table, ParseError> {
     Ok(pairs)
 }
 
-/// The nested table stored under `key`, if any. Keys compare case-insensitively,
-/// as Steam itself treats them.
 pub fn table<'a>(pairs: &'a [(String, Value)], key: &str) -> Option<&'a Table> {
     match lookup(pairs, key)? {
         Value::Table(table) => Some(table),
@@ -59,7 +53,6 @@ pub fn table<'a>(pairs: &'a [(String, Value)], key: &str) -> Option<&'a Table> {
     }
 }
 
-/// The text stored under `key`, if any.
 pub fn text<'a>(pairs: &'a [(String, Value)], key: &str) -> Option<&'a str> {
     match lookup(pairs, key)? {
         Value::Text(text) => Some(text),
@@ -67,7 +60,6 @@ pub fn text<'a>(pairs: &'a [(String, Value)], key: &str) -> Option<&'a str> {
     }
 }
 
-/// The text stored under `key`, parsed as an unsigned number.
 pub fn number(pairs: &[(String, Value)], key: &str) -> Option<u64> {
     text(pairs, key)?.parse().ok()
 }
