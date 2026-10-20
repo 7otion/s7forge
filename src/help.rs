@@ -106,6 +106,38 @@ pub fn print_unsubscribe_help() {
     println!("    s7forge unsubscribe --app-id 548430 --item-ids 123,456,789");
 }
 
+pub fn print_download_items_help() {
+    println!("Ask Steam to download or update subscribed workshop items, without waiting\n");
+    println!("USAGE:");
+    println!("    s7forge download-items --app-id <APP_ID> --item-ids <ITEM_IDS>\n");
+    println!("OPTIONS:");
+    println!("    --app-id <APP_ID>          Steam App ID of the game");
+    println!("    --item-ids <ITEM_IDS>      Workshop item IDs (comma-separated)");
+    println!("    -h, --help                 Print help\n");
+    println!("OUTPUT:");
+    println!("    One entry per item with an outcome: pending (Steam queued it; follow it with");
+    println!("    download-progress), completed (already up to date), refused (not subscribed");
+    println!("    or rejected by Steam) or failed (Steam reported an error at once).\n");
+    println!("EXAMPLE:");
+    println!("    s7forge download-items --app-id 548430 --item-ids 123,456,789");
+}
+
+pub fn print_download_progress_help() {
+    println!("Download state and progress of workshop items, read from the local Steam client\n");
+    println!("USAGE:");
+    println!("    s7forge download-progress --app-id <APP_ID> --item-ids <ITEM_IDS>\n");
+    println!("OPTIONS:");
+    println!("    --app-id <APP_ID>          Steam App ID of the game");
+    println!("    --item-ids <ITEM_IDS>      Workshop item IDs (comma-separated)");
+    println!("    -h, --help                 Print help\n");
+    println!("OUTPUT:");
+    println!("    One entry per item: item_id, state (subscribed, installed, needs_update,");
+    println!("    downloading, download_pending), downloaded_bytes and total_bytes (null");
+    println!("    unless a download is in progress).\n");
+    println!("EXAMPLE:");
+    println!("    s7forge download-progress --app-id 548430 --item-ids 123,456,789");
+}
+
 pub fn print_download_workshop_item_help() {
     println!("Force Steam to (re)download a subscribed workshop item and wait for the result\n");
     println!("USAGE:");
@@ -246,6 +278,8 @@ pub fn print_general_help() {
     println!("    workshop-state           Local state of every subscription, no item details");
     println!("    subscription-times       When this account subscribed to each item");
     println!("    check-item-download      Check if a workshop item is downloaded");
+    println!("    download-progress        Download state and progress of several items");
+    println!("    download-items           Ask Steam to download or update several items");
     println!("    subscribe                Subscribe to workshop items");
     println!("    unsubscribe              Unsubscribe from workshop items");
     println!("    download-workshop-item   Force (re)download of a subscribed workshop item");

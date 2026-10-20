@@ -97,6 +97,16 @@ async fn execute_single_command(command: Command) -> Result<String, String> {
                 .await
                 .map(|results| serde_json::to_string_pretty(&results).unwrap())
         }
+        Command::DownloadItems { app_id, item_ids } => {
+            commands::download_items::download_items(app_id, item_ids)
+                .await
+                .map(|requests| serde_json::to_string_pretty(&requests).unwrap())
+        }
+        Command::DownloadProgress { app_id, item_ids } => {
+            commands::download_progress::download_progress(app_id, item_ids)
+                .await
+                .map(|progress| serde_json::to_string_pretty(&progress).unwrap())
+        }
         Command::DownloadWorkshopItem { app_id, item_id } => {
             commands::download_workshop_item::download_workshop_item(app_id, item_id)
                 .await

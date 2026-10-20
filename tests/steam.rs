@@ -171,6 +171,48 @@ fn check_item_download_reports_installed_item_as_complete() {
     assert_eq!(value["progress_percentage"].as_f64().unwrap(), 100.0);
 }
 
+#[test]
+fn download_progress_reports_installed_item() {
+    require_steam();
+    let _lock = lock_item_download();
+    let value = s7forge(&[
+        "download-progress",
+        "--app-id",
+        APP_ID,
+        "--item-ids",
+        ITEM_ID,
+    ])
+    .json();
+    let items = as_array(&value);
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["item_id"].to_string(), ITEM_ID);
+    assert_eq!(items[0]["state"]["installed"], true);
+    assert_eq!(items[0]["state"]["downloading"], false);
+    assert!(items[0]["installed_time_updated"].is_u64());
+}
+
+#[test]
+fn download_items_reports_installed_item() {
+    require_steam();
+    let _lock = lock_item_download();
+    let value = s7forge(&["download-items", "--app-id", APP_ID, "--item-ids", ITEM_ID]).json();
+    let items = as_array(&value);
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["item_id"].to_string(), ITEM_ID);
+    let outcome = items[0]["outcome"].as_str().unwrap();
+    assert!(
+        outcome == "completed" || outcome == "pending",
+        "unexpected outcome {outcome}"
+    );
+}
+
+#[test]
+fn download_items_refuses_unsubscribed_item() {
+    require_steam();
+    let value = s7forge(&["download-items", "--app-id", APP_ID, "--item-ids", "1"]).json();
+    assert_eq!(as_array(&value)[0]["outcome"], "refused");
+}
+
 fn search(args: &[&str]) -> Vec<serde_json::Value> {
     require_steam();
     let mut full = vec!["search-workshop", "--app-id", APP_ID];

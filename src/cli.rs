@@ -28,6 +28,14 @@ pub enum Command {
         app_id: u32,
         item_id: u64,
     },
+    DownloadProgress {
+        app_id: u32,
+        item_ids: Vec<u64>,
+    },
+    DownloadItems {
+        app_id: u32,
+        item_ids: Vec<u64>,
+    },
     SubscribedItems {
         app_id: u32,
     },
@@ -309,6 +317,52 @@ fn parse_command(
             |b| {
                 require_item_ids(&b.item_ids)?;
                 Ok(Command::Unsubscribe {
+                    app_id: b.app_id.ok_or("Missing --app-id")?,
+                    item_ids: b.item_ids,
+                })
+            },
+        ),
+        "download-items" => parse_simple_command(
+            parser,
+            global_app_id,
+            help::print_download_items_help,
+            |b, flag, p| {
+                match flag {
+                    "app-id" => b.app_id = Some(p.value()?.parse()?),
+                    "item-ids" => {
+                        let ids_str = p.value()?.to_string_lossy().to_string();
+                        b.item_ids = CommandBuilder::parse_item_ids(&ids_str)?;
+                    }
+                    _ => return Ok(false),
+                }
+                Ok(true)
+            },
+            |b| {
+                require_item_ids(&b.item_ids)?;
+                Ok(Command::DownloadItems {
+                    app_id: b.app_id.ok_or("Missing --app-id")?,
+                    item_ids: b.item_ids,
+                })
+            },
+        ),
+        "download-progress" => parse_simple_command(
+            parser,
+            global_app_id,
+            help::print_download_progress_help,
+            |b, flag, p| {
+                match flag {
+                    "app-id" => b.app_id = Some(p.value()?.parse()?),
+                    "item-ids" => {
+                        let ids_str = p.value()?.to_string_lossy().to_string();
+                        b.item_ids = CommandBuilder::parse_item_ids(&ids_str)?;
+                    }
+                    _ => return Ok(false),
+                }
+                Ok(true)
+            },
+            |b| {
+                require_item_ids(&b.item_ids)?;
+                Ok(Command::DownloadProgress {
                     app_id: b.app_id.ok_or("Missing --app-id")?,
                     item_ids: b.item_ids,
                 })

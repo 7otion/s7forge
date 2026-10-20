@@ -32,6 +32,12 @@ s7forge workshop-items --app-id 548430 --item-ids 123,456,789
 # Check download status
 s7forge check-item-download --app-id 548430 --item-id 123456789
 
+# Download state and progress of several items in one run
+s7forge download-progress --app-id 548430 --item-ids 123,456,789
+
+# Ask Steam to download or update several subscribed items, without waiting
+s7forge download-items --app-id 548430 --item-ids 123,456,789
+
 # Get collection items
 s7forge collection-items --app-id 548430 --item-id 987654321
 ```
@@ -195,6 +201,34 @@ read fresh on every run and never cached.
 `install.time_updated` is the `time_updated` of the version installed on this
 PC. If it is lower than the item's own `time_updated`, a newer version is
 published but not installed yet.
+
+`download-progress` returns only this local state for several items in one run,
+plus the bytes of a download in progress (`null` otherwise):
+
+```json
+[
+  {
+    "item_id": 2858004741,
+    "state": { "subscribed": true, "installed": false, "needs_update": false, "downloading": true, "download_pending": false },
+    "downloaded_bytes": 10485760,
+    "total_bytes": 52428800,
+    "installed_time_updated": 1742939179
+  }
+]
+```
+
+`download-items` asks the Steam client to download or update each subscribed
+item and returns at once. `outcome` is `pending` (queued; follow it with
+`download-progress`), `completed` (Steam answered immediately, so the item was
+already up to date), `refused` (not subscribed, or rejected by Steam) or
+`failed` (Steam reported an error straight away, given in `error`):
+
+```json
+[
+  { "item_id": 2858004741, "outcome": "completed" },
+  { "item_id": 1, "outcome": "refused", "error": "Steam refused to download the item" }
+]
+```
 
 ### Subscription time
 

@@ -3,6 +3,8 @@ pub mod check_item_download;
 pub mod clear_cache;
 pub mod collection_items;
 pub mod discover_tags;
+pub mod download_items;
+pub mod download_progress;
 pub mod download_workshop_item;
 pub mod search_workshop;
 pub mod steam_library_paths;
