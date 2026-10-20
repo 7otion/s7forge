@@ -1,16 +1,19 @@
 use futures_util::FutureExt;
 use serde::Serialize;
-use steamworks::PublishedFileId;
+use steamworks::{PublishedFileId, SteamId};
 use tokio::sync::mpsc;
 
 use super::workshop_items::{EnhancedWorkshopItem, workshop_items};
 use crate::core::steam_manager;
+use crate::utils::fetch_creator_names::{UNKNOWN_NAME, fetch_creator_names};
 
 #[derive(Debug, Serialize)]
 pub struct CollectionInfo {
     pub id: u64,
     pub title: String,
     pub description: String,
+    pub creator_id: String,
+    pub creator_name: String,
     pub preview_url: Option<String>,
     pub time_created: u64,
     pub time_updated: u64,
@@ -62,6 +65,8 @@ pub async fn collection_items(
                             id: collection_info.published_file_id.0,
                             title: collection_info.title.clone(),
                             description: collection_info.description.clone(),
+                            creator_id: collection_info.owner.raw().to_string(),
+                            creator_name: UNKNOWN_NAME.to_string(),
                             preview_url: details.preview_url(0),
                             time_created: collection_info.time_created as u64,
                             time_updated: collection_info.time_updated as u64,
@@ -120,7 +125,14 @@ pub async fn collection_items(
         }
     }
 
-    let (collection_info, item_ids) = collection_result.unwrap();
+    let (mut collection_info, item_ids) = collection_result.unwrap();
+    let owner = SteamId::from_raw(collection_info.creator_id.parse().unwrap_or_default());
+    if let Some(name) = fetch_creator_names(vec![owner], steam_game_id)
+        .await?
+        .remove(&owner.raw())
+    {
+        collection_info.creator_name = name;
+    }
     let items = workshop_items(steam_game_id, item_ids).await?;
 
     Ok(CollectionDetails {
